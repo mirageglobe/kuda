@@ -1,3 +1,26 @@
+# Binaries
+kuda
+*.exe
+
+# IDE/Editor
+.vscode/
+.idea/
+.claude/
+.DS_Store
+
+# Logs/Temporary
+*.log
+tmp/
+
+# Go
+/bin/
+/pkg/
+/vendor/
+*.test
+*.out
+
+# Hugo (old)
+docs/
 
 # github gitignore https://github.com/github/gitignore/blob/main/Global/Vim.gitignore
 #
