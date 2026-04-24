@@ -1,50 +1,18 @@
-# aardwolfmaps
+# Kuda
 
-aardwolfmaps is yet another attempt to build maps for aardwolf mud (multi-user
-dungeons). the build is based on dot language
-(https://graphviz.org/doc/info/lang.html) which is a simple text format file
-for directed graphs.
+Kuda is a modern MUD (Multi-User Dungeon) client built in Go, inspired by the Japanese folklore spirit *Kuda-gitsune*. It is designed with a focus on performance, extensibility, and seamless integration with [Aardwolf MUD](https://www.aardwolf.com/).
 
-to start, see `src/example.dot` and `Makefile`
+## Features
+- Optimized for Aardwolf MUD connectivity.
+- Built in Go for high-performance cross-platform usage.
+- Extensible architecture with Lua scripting support.
+- Integrated mapping system for zone navigation.
+- Terminal-based interface (TUI).
 
-# usage
-
-``` text
-# using the makefile
-make                            # show make menu
-make website                    # build website in src directory
-make maps                       # build maps in src directory
-
-# graphviz generate svg
-dot -Tsvg dotgraph.dot > output.svg
-
-# graphviz use nop to validate graphs
-- https://graphviz.org/docs/layouts/nop/
-
-# hugo generate new posts
-cd src/website
-hugo new posts/my-first-post.md
-
-# hugo add new theme
-git submodule add https://github.com/theNewDynamic/gohugo-theme-ananke themes/ananke
+## Build
+```bash
+make build
 ```
 
-# notes
-
-``` text
-# getting room number in aardwolf
-- gmcp give vnum for room if it's not maze
-- if it's maze then the vnum is -1
-- check how aardmush uses gmcphandler plugin It has great notes in it (the plugin)
-fiendish has done all that for mapper etc through that
-- maybe you can fork out something through reading what fiendish has done. Basically
-everything is there already. Just integrating it all to your own client and how is your problem
-```
-
-# reference
-
-- <https://graphviz.org/doc/info/command.html>
-- <https://plantuml-documentation.readthedocs.io/en/latest/command_line_reference.html>
-- <https://gohugo.io/getting-started/quick-start/>
-- <https://kroki.io/>
-- <https://crashedmind.github.io/PlantUMLHitchhikersGuide/layout/layout.html>
+## Status
+Kuda is currently in the initial development phase.
