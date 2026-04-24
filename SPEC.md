@@ -6,17 +6,7 @@
 
 ## 1. Overview
 
-**Kuda** is a modern MUD client built in Go, designed to provide a performant, extensible, and user-friendly interface for connecting to MUDs. While Aardwolf [Aardwolf](https://www.aardwolf.com/) is the primary target for development and testing, Kuda aims to provide generic support for other MUDs as well.
-
-### Goals
-
-| Goal | Status |
-| :--- | :--- |
-| Core TCP/Telnet connectivity | [ ] |
-| Terminal User Interface (TUI) | [ ] |
-| Lua Scripting engine | [ ] |
-| Aardwolf protocol support (GMCP/MSP/MCCP) | [ ] |
-| Mapper system | [ ] |
+**Kuda** is a modern MUD client built in Go, designed for performance and extensibility. Aardwolf [Aardwolf](https://www.aardwolf.com/) is the primary target for testing, but Kuda is designed to support generic MUD protocols.
 
 ---
 
@@ -26,7 +16,6 @@
 | :--- | :--- |
 | Go | Primary language |
 | `bubbletea` | TUI framework |
-| `gdam` | Terminal handling |
 | `lua` | Scripting engine |
 
 ---
@@ -36,36 +25,31 @@
 ```
 kuda/
 ├── src/
-│   ├── client/        # Network handling, connection management
-│   ├── ui/            # Bubbletea components, layout
-│   ├── scripts/       # Lua integration
+│   ├── network/       # TCP, Telnet, Protocol parsing (GMCP/MCCP)
+│   ├── ui/            # TUI (Bubbletea)
+│   ├── engine/        # Lua integration & State management
 │   ├── mapper/        # Mapping logic
 │   └── main.go        # Entry point
-├── docs/              # Documentation
-├── Makefile           # Build and test orchestration
-└── README.md          # Project overview
-```
-
-### 3.1 Data Flow
-
-```
-Socket ──► Connection Handler ──► Protocol Parser (GMCP/Telnet/MCCP) ──► UI State ──► TUI
+└── ...
 ```
 
 ---
 
 ## 4. Development Roadmap
 
-### Phase 1: Core
-- [ ] Implement TCP connection handler.
-- [ ] Implement basic Telnet/GA protocol handling.
-- [ ] Basic TUI layout (input field, output window).
+### Phase 1: Minimal Viable Client (MVC)
+- [ ] Basic TCP socket connection to a host/port.
+- [ ] Raw stream display in a simple TUI.
+- [ ] Basic user command input.
 
-### Phase 2: Aardwolf Integration
-- [ ] Implement GMCP (Generic MUD Communication Protocol) support.
-- [ ] Implement support for MUD Sound Protocol (MSP) / triggers.
-- [ ] Implement MCCP (Mud Client Compression Protocol) support.
+### Phase 2: Protocol Foundation
+- [ ] Basic Telnet negotiation (support for standard GA/ECHO).
+- [ ] Implement MCCP (Compression) for performance.
 
-### Phase 3: Extensibility & Features
-- [ ] Integrate Lua scripting engine for triggers/aliases/macros.
-- [ ] Implement Mapper system for real-time room tracking and visualization.
+### Phase 3: Aardwolf & Advanced Protocols
+- [ ] GMCP parsing and state management.
+- [ ] MSP support.
+
+### Phase 4: Extensibility
+- [ ] Integrate Lua for user-defined triggers/aliases.
+- [ ] Basic Mapper implementation for visual room tracking.
