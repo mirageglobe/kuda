@@ -120,10 +120,12 @@ func (m ClientModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg.Event.Type {
 		case EventText:
 			text := string(msg.Event.Data)
-			text = strings.ReplaceAll(text, "\r\n", "\n")
-			text = strings.ReplaceAll(text, "\r\x00", "\n")
-			text = strings.ReplaceAll(text, "\r", "\n")
-			text = strings.ReplaceAll(text, "\x00", "") // strip remaining nulls
+			// Most MUDs send \r\n for newlines. Some send \r\x00 for prompts.
+			// By stripping \r and \x00 entirely, we preserve only the \n
+			// which prevents the "double spacing" gap issue caused by 
+			// treating \r as a separate newline.
+			text = strings.ReplaceAll(text, "\r", "")
+			text = strings.ReplaceAll(text, "\x00", "")
 			m.history.WriteString(text)
 			m.refreshViewport()
 		case EventTelnetCommand:
