@@ -1,10 +1,22 @@
 package ui
 
 import (
+	"fmt"
+
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/mirageglobe/kuda/network"
 )
+
+// ServerSelectedMsg is emitted when the user confirms a server choice.
+// main.go handles this by creating the network client and transitioning to ClientModel.
+type ServerSelectedMsg struct {
+	Address string
+}
+
+// ConnectErrorMsg is sent back to LaunchModel when the connection attempt fails.
+type ConnectErrorMsg struct {
+	Err error
+}
 
 type item struct {
 	title, desc string
@@ -15,7 +27,8 @@ func (i item) Description() string { return i.desc }
 func (i item) FilterValue() string { return i.title }
 
 type LaunchModel struct {
-	list list.Model
+	list   list.Model
+	errMsg string
 }
 
 func NewLaunchModel() LaunchModel {
@@ -36,18 +49,13 @@ func (m LaunchModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg.String() {
 		case "enter":
 			i := m.list.SelectedItem().(item)
-			client := network.NewClient()
-			err := client.Connect(i.desc)
-			if err != nil {
-				return m, nil
-			}
-			newModel := NewClientModel(client)
-			return newModel, func() tea.Msg {
-				return tea.WindowSizeMsg{Width: m.list.Width(), Height: m.list.Height()}
-			}
+			return m, func() tea.Msg { return ServerSelectedMsg{Address: i.desc} }
 		case "q", "ctrl+c":
 			return m, tea.Quit
 		}
+	case ConnectErrorMsg:
+		m.errMsg = fmt.Sprintf("[ ERROR: %v ]", msg.Err)
+		return m, nil
 	case tea.WindowSizeMsg:
 		m.list.SetSize(msg.Width, msg.Height)
 		return m, nil
@@ -57,4 +65,9 @@ func (m LaunchModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, cmd
 }
 
-func (m LaunchModel) View() string { return m.list.View() }
+func (m LaunchModel) View() string {
+	if m.errMsg != "" {
+		return m.list.View() + "\n" + m.errMsg
+	}
+	return m.list.View()
+}

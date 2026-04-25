@@ -7,15 +7,11 @@ import (
 	"github.com/charmbracelet/bubbles/textinput"
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/mirageglobe/kuda/network"
 )
-
-// verify Connection interface is satisfied at compile time
-var _ Connection = (*network.Client)(nil)
 
 // NetworkEventMsg wraps a network event for bubbletea.
 type NetworkEventMsg struct {
-	Event network.Event
+	Event Event
 }
 
 // ErrorMsg wraps a network or runtime error for bubbletea.
@@ -84,7 +80,11 @@ func (m ClientModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case tea.KeyEnter:
 			cmd := m.input.Value()
 			if cmd != "" {
-				m.client.Write([]byte(cmd + "\n"))
+				if err := m.client.Write([]byte(cmd + "\n")); err != nil {
+					fmt.Fprintf(&m.history, "\n[ ERROR: %v ]\n", err)
+					m.viewport.SetContent(m.history.String())
+					m.viewport.GotoBottom()
+				}
 				m.input.SetValue("")
 			}
 		}
@@ -97,7 +97,7 @@ func (m ClientModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.input.Width = msg.Width
 
 	case NetworkEventMsg:
-		if msg.Event.Type == network.EventText {
+		if msg.Event.Type == EventText {
 			text := strings.ReplaceAll(string(msg.Event.Data), "\r\n", "\n")
 			text = strings.ReplaceAll(text, "\r", "\n")
 			m.history.WriteString(text)
@@ -107,7 +107,7 @@ func (m ClientModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		cmds = append(cmds, m.waitForNetworkEvent())
 
 	case ErrorMsg:
-		m.history.WriteString(fmt.Sprintf("\n[ ERROR: %v ]\n", msg.Err))
+		fmt.Fprintf(&m.history, "\n[ ERROR: %v ]\n", msg.Err)
 		m.viewport.SetContent(m.history.String())
 		m.viewport.GotoBottom()
 		return m, tea.Quit

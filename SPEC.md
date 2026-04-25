@@ -38,8 +38,9 @@
 kuda/
 ├── main.go             # entry point — launches bubbletea program
 ├── network/            # tcp, telnet, gmcp parsing — no game logic
-│   ├── client.go       # tcp connection, telnet protocol state machine
+│   ├── client.go       # tcp connection lifecycle
 │   ├── client_test.go
+│   ├── telnet.go       # telnet state machine (IAC/DO/WILL/SB/SE)
 │   └── events.go       # event types and telnet/gmcp constants
 ├── engine/             # game state, lua vm, triggers and aliases
 │   ├── engine.go       # engine lifecycle
@@ -68,8 +69,8 @@ cross-package communication is enforced via interfaces. concrete types must not 
 
 | Interface | Defined in | Implemented by | Used by |
 | :--- | :--- | :--- | :--- |
-| `ui.Connection` | `ui/interfaces.go` | `*network.Client` | `ui.ClientModel` |
-| `engine.EventSource` | `engine/interfaces.go` | `*network.Client` | `engine.Engine` (future) |
+| `ui.Connection` | `ui/interfaces.go` | `clientAdapter` (main.go) | `ui.ClientModel` |
+| `engine.EventSource` | `engine/interfaces.go` | adapter (future, main.go) | `engine.Engine` (future) |
 | `engine.GameState` | `engine/interfaces.go` | `engine.Engine` (future) | `ui`, `mapper` |
 
 ---
