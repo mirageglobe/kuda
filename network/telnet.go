@@ -124,7 +124,7 @@ func (p *telnetParser) handleNegotiation(cmd, option byte) {
 			p.client.Write([]byte{IAC, SE})
 
 			p.client.Write([]byte{IAC, SB, TelnetOptionGMCP})
-			p.client.Write([]byte(`Core.Supports.Set ["Char 1", "Char.Vitals 1", "Room 1"]`))
+			p.client.Write([]byte(`Core.Supports.Set ["Char 1", "Char.Vitals 1", "Room 1", "Comm 1"]`))
 			p.client.Write([]byte{IAC, SE})
 			return
 		}
