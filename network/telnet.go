@@ -116,6 +116,18 @@ func (p *telnetParser) handleNegotiation(cmd, option byte) {
 			p.client.Write([]byte{IAC, DO, option}) //nolint:errcheck
 			return
 		}
+		if option == TelnetOptionGMCP {
+			p.client.Write([]byte{IAC, DO, option}) //nolint:errcheck
+			// Initial handshake
+			p.client.Write([]byte{IAC, SB, TelnetOptionGMCP})
+			p.client.Write([]byte(`Core.Hello {"client": "kuda", "version": "0.1.0"}`))
+			p.client.Write([]byte{IAC, SE})
+
+			p.client.Write([]byte{IAC, SB, TelnetOptionGMCP})
+			p.client.Write([]byte(`Core.Supports.Set ["Char 1", "Char.Vitals 1", "Room 1"]`))
+			p.client.Write([]byte{IAC, SE})
+			return
+		}
 		p.client.Write([]byte{IAC, DONT, option}) //nolint:errcheck
 	case WONT:
 		if option == TelnetOptionEcho {

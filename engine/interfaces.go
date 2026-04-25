@@ -26,8 +26,21 @@ type EventSource interface {
 // GameState exposes read-only game state to ui and mapper.
 // All mutations happen inside engine; consumers only read through this interface.
 type GameState interface {
-	// Room returns the current room vnum and name.
-	Room() (vnum int, name string)
+	// Room returns current room details.
+	Room() RoomInfo
+	// Vitals returns current player character vitals.
+	Vitals() VitalsInfo
 	// CharName returns the player character name.
 	CharName() string
+}
+
+type VitalsInfo struct {
+	HP, MaxHP     int
+	Mana, MaxMana int
+	Move, MaxMove int
+}
+
+type RoomInfo struct {
+	Vnum int
+	Name string
 }
