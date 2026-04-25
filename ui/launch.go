@@ -67,7 +67,7 @@ func (m LaunchModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.errMsg = fmt.Sprintf("[ ERROR: %v ]", msg.Err)
 		return m, nil
 	case tea.WindowSizeMsg:
-		m.list.SetSize(msg.Width, msg.Height)
+		m.list.SetSize(msg.Width, msg.Height-3)
 		return m, nil
 	}
 	var cmd tea.Cmd
@@ -76,12 +76,17 @@ func (m LaunchModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m LaunchModel) View() string {
-	view := m.list.View()
+	m.list.SetShowHelp(false)
+	lView := m.list.View()
+
+	var status string
 	if m.connecting {
-		return view + "\n" + hintStyle.Render("Connecting...")
+		status = hintStyle.Render("Connecting...")
+	} else if m.errMsg != "" {
+		status = m.errMsg
 	}
-	if m.errMsg != "" {
-		return view + "\n" + m.errMsg
-	}
-	return view
+
+	// Always reserve 2 lines for status (one for content, one for spacing)
+	// and 1 line for help. Total 3 lines reserved in SetSize.
+	return fmt.Sprintf("%s\n\n%s\n%s", lView, status, m.list.Help.View(m.list))
 }
