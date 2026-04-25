@@ -158,9 +158,9 @@ func (p *telnetParser) handleSubnegotiation(data []byte) {
 	case TelnetOptionTTYPE:
 		if len(data) > 1 && data[1] == 1 { // SEND
 			// reply with IS KUDA
-			p.client.Write([]byte{IAC, SB, TelnetOptionTTYPE, 0})           // IS
-			p.client.Write([]byte("KUDA"))                                 // terminal name
-			p.client.Write([]byte{IAC, SE})                                // end
+			p.client.Write([]byte{IAC, SB, TelnetOptionTTYPE, 0}) // IS
+			p.client.Write([]byte("KUDA"))                        // terminal name
+			p.client.Write([]byte{IAC, SE})                       // end
 		}
 	}
 }

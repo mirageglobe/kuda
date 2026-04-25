@@ -9,7 +9,13 @@
 # ============================================================ configuration = #
 ################################################################################
 
-.PHONY: all build test lint clean help
+BINARY_NAME=kuda
+BIN_DIR=bin
+VERSION=$(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
+BUILD_TIME=$(shell date -u +%Y-%m-%dT%H:%M:%SZ)
+LDFLAGS=-ldflags "-X main.version=$(VERSION) -X main.buildTime=$(BUILD_TIME)"
+
+.PHONY: all build run test lint tidy fmt clean help
 
 # set default target
 .DEFAULT_GOAL := help
@@ -28,26 +34,46 @@
 
 all: build                                              ## default to building the project
 
-build:                                                  ## build the Kuda binary
-	@printf "==> Building Kuda...\n"
-	@go build -o bin/kuda ./main.go
+build: tidy fmt                                         ## build the Kuda binary
+	@printf "==> Building $(BINARY_NAME) $(VERSION)...\n"
+	@go build $(LDFLAGS) -o $(BIN_DIR)/$(BINARY_NAME) ./main.go
 
 run: build                                              ## build and run Kuda
-	@./bin/kuda
+	@./$(BIN_DIR)/$(BINARY_NAME)
+
+install: build                                          ## install the binary to $GOPATH/bin
+	@go install $(LDFLAGS) ./...
+
+##@ Development
+
+tidy:                                                   ## tidy up go modules
+	@printf "==> Tidying modules...\n"
+	@go mod tidy
+
+fmt:                                                    ## format go code
+	@printf "==> Formatting code...\n"
+	@go fmt ./...
 
 ##@ Testing
 
 test: lint                                              ## run project tests (includes lint)
-	@go test ./...
+	@printf "==> Running tests...\n"
+	@go test -v -race ./...
 
 lint:                                                   ## run go vet and golangci-lint
+	@printf "==> Running linters...\n"
 	@go vet ./...
-	@golangci-lint run ./...
+	@if command -v golangci-lint >/dev/null; then \
+		golangci-lint run ./...; \
+	else \
+		printf "WARNING: golangci-lint not found, skipping...\n"; \
+	fi
 
 ##@ Cleanup
 
 clean:                                                  ## remove build artifacts
-	@rm -rf bin/
+	@printf "==> Cleaning up...\n"
+	@rm -rf $(BIN_DIR)/
 
 ##@ Helpers
 

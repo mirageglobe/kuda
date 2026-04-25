@@ -66,7 +66,7 @@ func (c *Client) listen() {
 			return
 		}
 		p.handleByte(b)
-		// If no more bytes are immediately available in the buffer, 
+		// If no more bytes are immediately available in the buffer,
 		// flush the parser to ensure prompts are displayed.
 		if reader.Buffered() == 0 {
 			p.flushText()

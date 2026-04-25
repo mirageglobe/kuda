@@ -127,7 +127,7 @@ func (m ClientModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			text := string(msg.Event.Data)
 			// Most MUDs send \r\n for newlines. Some send \r\x00 for prompts.
 			// By stripping \r and \x00 entirely, we preserve only the \n
-			// which prevents the "double spacing" gap issue caused by 
+			// which prevents the "double spacing" gap issue caused by
 			// treating \r as a separate newline.
 			text = strings.ReplaceAll(text, "\r", "")
 			text = strings.ReplaceAll(text, "\x00", "")

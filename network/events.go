@@ -40,10 +40,10 @@ const (
 
 // MUD Protocol Constants
 const (
-	TelnetOptionEcho   byte = 1
-	TelnetOptionTTYPE  byte = 24
-	TelnetOptionMCCP   byte = 86
-	TelnetOptionGMCP   byte = 201
-	TelnetOptionMXP    byte = 91
-	TelnetOptionMSSP   byte = 70
+	TelnetOptionEcho  byte = 1
+	TelnetOptionTTYPE byte = 24
+	TelnetOptionMCCP  byte = 86
+	TelnetOptionGMCP  byte = 201
+	TelnetOptionMXP   byte = 91
+	TelnetOptionMSSP  byte = 70
 )

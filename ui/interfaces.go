@@ -4,7 +4,7 @@ package ui
 type EventType int
 
 const (
-	EventText          EventType = iota
+	EventText EventType = iota
 	EventGMCP
 	EventTelnetCommand
 )

@@ -11,6 +11,11 @@ import (
 	"github.com/mirageglobe/kuda/ui"
 )
 
+var (
+	version   = "dev"
+	buildTime = "unknown"
+)
+
 // rootModel owns model transitions and network client creation.
 // It is the only place allowed to import both ui and network.
 type rootModel struct {
