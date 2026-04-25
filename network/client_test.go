@@ -24,7 +24,7 @@ func TestClient_TelnetParsing(t *testing.T) {
 	// case 1: normal text
 	serverConn.Write([]byte("hello"))  //nolint:errcheck
 	serverConn.Write([]byte{IAC, NOP}) // trigger flush
-	
+
 	foundHello := false
 	for i := 0; i < 2; i++ {
 		select {
@@ -41,8 +41,8 @@ func TestClient_TelnetParsing(t *testing.T) {
 
 	// case 2: IAC WILL ECHO stripped to negotiation event + following text
 	serverConn.Write([]byte{IAC, WILL, TelnetOptionEcho, 'w'}) //nolint:errcheck
-	serverConn.Write([]byte{IAC, NOP})                        // trigger flush
-	
+	serverConn.Write([]byte{IAC, NOP})                         // trigger flush
+
 	gotNegotiation, gotW := false, false
 	for i := 0; i < 3; i++ { // negotiation, w, nop
 		select {

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"strings"
 )
+
 // Engine is the central brain that consumes network events and updates state.
 type Engine struct {
 	state      *state
@@ -71,7 +72,7 @@ func (e *Engine) listen() {
 				}
 			}
 		case <-e.source.ErrorsCh():
-// ...
+			// ...
 
 			// ignore errors for now, main.go handles connection drops
 		}
