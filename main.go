@@ -20,6 +20,16 @@ func (m rootModel) Init() tea.Cmd { return m.current.Init() }
 
 func (m rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
+	case ui.SplashDoneMsg:
+		next := ui.NewLaunchModel()
+		m.current = next
+		return m, next.Init()
+
+	case ui.ReturnToLauncherMsg:
+		next := ui.NewLaunchModel()
+		m.current = next
+		return m, next.Init()
+
 	case ui.ServerSelectedMsg:
 		if msg.Address == ui.MockAddress {
 			next := ui.NewClientModel(newMockConnection())
@@ -141,7 +151,7 @@ func (m *mockConnection) ErrorsCh() <-chan error    { return m.errors }
 // ── entry point ──────────────────────────────────────────────────────────────
 
 func main() {
-	model := rootModel{current: ui.NewLaunchModel()}
+	model := rootModel{current: ui.NewSplashModel()}
 	p := tea.NewProgram(model, tea.WithAltScreen())
 	if _, err := p.Run(); err != nil {
 		fmt.Printf("error running program: %v\n", err)
