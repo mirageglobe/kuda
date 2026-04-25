@@ -107,8 +107,11 @@ func (m ClientModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case NetworkEventMsg:
 		switch msg.Event.Type {
 		case EventText:
-			text := strings.ReplaceAll(string(msg.Event.Data), "\r\n", "\n")
+			text := string(msg.Event.Data)
+			text = strings.ReplaceAll(text, "\r\n", "\n")
+			text = strings.ReplaceAll(text, "\r\x00", "\n")
 			text = strings.ReplaceAll(text, "\r", "\n")
+			text = strings.ReplaceAll(text, "\x00", "") // strip remaining nulls
 			m.history.WriteString(text)
 			m.viewport.SetContent(m.history.String())
 			m.viewport.GotoBottom()
