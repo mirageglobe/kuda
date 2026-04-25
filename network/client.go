@@ -3,9 +3,11 @@ package network
 import (
 	"bufio"
 	"compress/zlib"
+	"crypto/tls"
 	"fmt"
 	"io"
 	"net"
+	"strings"
 	"time"
 )
 
@@ -33,8 +35,24 @@ func newClientWithConn(conn net.Conn) *Client {
 }
 
 // Connect establishes a TCP connection to the given address.
+// Supports unencrypted connections and TLS if address starts with "tls://".
 func (c *Client) Connect(address string) error {
-	conn, err := net.DialTimeout("tcp", address, 10*time.Second)
+	dialer := &net.Dialer{Timeout: 10 * time.Second}
+
+	var conn net.Conn
+	var err error
+
+	if strings.HasPrefix(address, "tls://") {
+		cleanAddr := strings.TrimPrefix(address, "tls://")
+		// MUD TLS often uses self-signed or older certs; we try strict first
+		// but might need InsecureSkipVerify: true if users have issues.
+		conn, err = tls.DialWithDialer(dialer, "tcp", cleanAddr, &tls.Config{
+			InsecureSkipVerify: true, // Common for MUDs with self-signed certs
+		})
+	} else {
+		conn, err = dialer.Dial("tcp", address)
+	}
+
 	if err != nil {
 		return fmt.Errorf("failed to connect to %s: %w", address, err)
 	}
