@@ -15,6 +15,7 @@ type Event struct {
 	Type EventType
 	Data []byte
 }
+
 // EventSource is what engine consumes from the network layer.
 // Defined here so engine has no import dependency on network.
 type EventSource interface {
@@ -28,10 +29,10 @@ type EventSource interface {
 type GameState interface {
 	// Execute processes a user command through the script engine.
 	Execute(cmd string) error
+	// ToggleLua enables or disables the script engine. Returns the new state.
+	ToggleLua() bool
 	// Room returns current room details.
 	Room() RoomInfo
-// ...
-
 	// Vitals returns current player character vitals.
 	Vitals() VitalsInfo
 	// CharName returns the player character name.

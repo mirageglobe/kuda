@@ -24,7 +24,7 @@ type ErrorMsg struct {
 	Err error
 }
 
-var statusHint = hintStyle.Render("[ esc: server list  ctrl+c: quit ]")
+var statusHint = hintStyle.Render("[ esc: server list  ctrl+l: toggle lua  ctrl+c: quit ]")
 
 // ClientModel is the main connected-session view.
 type ClientModel struct {
@@ -98,6 +98,9 @@ func (m ClientModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg.Type {
 		case tea.KeyCtrlC:
 			return m, tea.Quit
+		case tea.KeyCtrlL:
+			m.engine.ToggleLua()
+			return m, nil
 		case tea.KeyEsc:
 			return m, func() tea.Msg { return ReturnToLauncherMsg{} }
 		case tea.KeyEnter:
