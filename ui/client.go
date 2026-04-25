@@ -105,12 +105,25 @@ func (m ClientModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.input.Width = msg.Width
 
 	case NetworkEventMsg:
-		if msg.Event.Type == EventText {
+		switch msg.Event.Type {
+		case EventText:
 			text := strings.ReplaceAll(string(msg.Event.Data), "\r\n", "\n")
 			text = strings.ReplaceAll(text, "\r", "\n")
 			m.history.WriteString(text)
 			m.viewport.SetContent(m.history.String())
 			m.viewport.GotoBottom()
+		case EventTelnetCommand:
+			if len(msg.Event.Data) >= 2 {
+				cmd := msg.Event.Data[0]
+				opt := msg.Event.Data[1]
+				if opt == TelnetOptEcho {
+					if cmd == TelnetCmdWILL {
+						m.input.EchoMode = textinput.EchoPassword
+					} else if cmd == TelnetCmdWONT {
+						m.input.EchoMode = textinput.EchoNormal
+					}
+				}
+			}
 		}
 		cmds = append(cmds, m.waitForNetworkEvent())
 

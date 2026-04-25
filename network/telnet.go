@@ -34,6 +34,9 @@ func (p *telnetParser) handleByte(b byte) {
 		case IAC:
 			p.client.events <- Event{Type: EventText, Data: []byte{IAC}}
 			p.state = stateText
+		case GA:
+			p.client.events <- Event{Type: EventTelnetCommand, Data: []byte{GA}}
+			p.state = stateText
 		case DO:
 			p.state = stateDO
 		case DONT:
@@ -89,12 +92,23 @@ func (p *telnetParser) handleByte(b byte) {
 }
 
 func (p *telnetParser) handleNegotiation(cmd, option byte) {
-	// refuse anything not explicitly supported to prevent negotiation loops
+	// handle supported options explicitly
 	switch cmd {
+	case WILL:
+		if option == TelnetOptionEcho {
+			p.client.Write([]byte{IAC, DO, option}) //nolint:errcheck
+			p.client.events <- Event{Type: EventTelnetCommand, Data: []byte{cmd, option}}
+			return
+		}
+		p.client.Write([]byte{IAC, DONT, option}) //nolint:errcheck
+	case WONT:
+		if option == TelnetOptionEcho {
+			p.client.Write([]byte{IAC, DONT, option}) //nolint:errcheck
+			p.client.events <- Event{Type: EventTelnetCommand, Data: []byte{cmd, option}}
+			return
+		}
 	case DO:
 		p.client.Write([]byte{IAC, WONT, option}) //nolint:errcheck
-	case WILL:
-		p.client.Write([]byte{IAC, DONT, option}) //nolint:errcheck
 	}
 	p.client.events <- Event{Type: EventTelnetCommand, Data: []byte{cmd, option}}
 }

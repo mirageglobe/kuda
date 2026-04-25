@@ -23,3 +23,11 @@ type Connection interface {
 	EventsCh() <-chan Event
 	ErrorsCh() <-chan error
 }
+
+// Telnet constants for UI interpretation.
+const (
+	TelnetCmdWILL = 251
+	TelnetCmdWONT = 252
+	TelnetCmdGA   = 249
+	TelnetOptEcho = 1
+)
