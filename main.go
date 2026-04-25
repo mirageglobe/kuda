@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/mirageglobe/kuda/engine"
 	"github.com/mirageglobe/kuda/network"
 	"github.com/mirageglobe/kuda/ui"
 )
@@ -14,6 +15,7 @@ import (
 // It is the only place allowed to import both ui and network.
 type rootModel struct {
 	current       tea.Model
+	engine        *engine.Engine
 	width, height int
 }
 
@@ -32,6 +34,8 @@ func (m rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		})
 
 	case ui.ReturnToLauncherMsg:
+		// When returning to launcher, we should probably kill the engine/client
+		m.engine = nil
 		next := ui.NewLaunchModel()
 		m.current = next
 		return m, tea.Batch(next.Init(), func() tea.Msg {
@@ -40,7 +44,10 @@ func (m rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case ui.ServerSelectedMsg:
 		if msg.Address == ui.MockAddress {
-			next := ui.NewClientModel(newMockConnection())
+			conn := newMockConnection()
+			// Mock engine
+			m.engine = engine.NewEngine(newEngineAdapter(conn))
+			next := ui.NewClientModel(conn, m.engine)
 			m.current = next
 			return m, tea.Batch(next.Init(), func() tea.Msg {
 				return tea.WindowSizeMsg{Width: m.width, Height: m.height}
@@ -55,7 +62,8 @@ func (m rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.current, cmd = m.current.Update(ui.ConnectErrorMsg{Err: msg.err})
 			return m, cmd
 		}
-		next := ui.NewClientModel(msg.adapter)
+		m.engine = engine.NewEngine(newEngineAdapter(msg.adapter))
+		next := ui.NewClientModel(msg.adapter, m.engine)
 		m.current = next
 		return m, tea.Batch(next.Init(), func() tea.Msg {
 			return tea.WindowSizeMsg{Width: m.width, Height: m.height}
@@ -91,6 +99,7 @@ func dialCmd(client *network.Client, address string) tea.Cmd {
 type clientAdapter struct {
 	client *network.Client
 	events chan ui.Event
+	engine chan engine.Event
 }
 
 var _ ui.Connection = (*clientAdapter)(nil)
@@ -99,6 +108,7 @@ func newClientAdapter(client *network.Client) *clientAdapter {
 	a := &clientAdapter{
 		client: client,
 		events: make(chan ui.Event, 1024),
+		engine: make(chan engine.Event, 1024),
 	}
 	go a.forward()
 	return a
@@ -106,16 +116,20 @@ func newClientAdapter(client *network.Client) *clientAdapter {
 
 func (a *clientAdapter) forward() {
 	for ev := range a.client.EventsCh() {
-		a.events <- mapEvent(ev)
+		uEv := mapToUIEvent(ev)
+		eEv := mapToEngineEvent(ev)
+		a.events <- uEv
+		a.engine <- eEv
 	}
 	close(a.events)
+	close(a.engine)
 }
 
 func (a *clientAdapter) Write(data []byte) error   { return a.client.Write(data) }
 func (a *clientAdapter) EventsCh() <-chan ui.Event { return a.events }
 func (a *clientAdapter) ErrorsCh() <-chan error    { return a.client.ErrorsCh() }
 
-func mapEvent(ev network.Event) ui.Event {
+func mapToUIEvent(ev network.Event) ui.Event {
 	var t ui.EventType
 	switch ev.Type {
 	case network.EventText:
@@ -127,6 +141,55 @@ func mapEvent(ev network.Event) ui.Event {
 	}
 	return ui.Event{Type: t, Data: ev.Data}
 }
+
+func mapToEngineEvent(ev network.Event) engine.Event {
+	var t engine.EventType
+	switch ev.Type {
+	case network.EventText:
+		t = engine.EventText
+	case network.EventGMCP:
+		t = engine.EventGMCP
+	case network.EventTelnetCommand:
+		t = engine.EventTelnetCommand
+	}
+	return engine.Event{Type: t, Data: ev.Data}
+}
+
+// ── engineAdapter ────────────────────────────────────────────────────────────
+
+type engineAdapter struct {
+	conn ui.Connection
+	ch   chan engine.Event
+}
+
+var _ engine.EventSource = (*engineAdapter)(nil)
+
+func newEngineAdapter(conn ui.Connection) *engineAdapter {
+	ea := &engineAdapter{
+		conn: conn,
+		ch:   make(chan engine.Event, 1024),
+	}
+	// We need to listen to the connection and map to engine events.
+	// But clientAdapter already does this and provides a channel.
+	// Let's optimize: if conn is clientAdapter, use its engine channel.
+	if a, ok := conn.(*clientAdapter); ok {
+		return &engineAdapter{conn: conn, ch: a.engine}
+	}
+	// Otherwise (like mock), we need to forward
+	go func() {
+		for ev := range conn.EventsCh() {
+			ea.ch <- engine.Event{
+				Type: engine.EventType(ev.Type),
+				Data: ev.Data,
+			}
+		}
+		close(ea.ch)
+	}()
+	return ea
+}
+
+func (e *engineAdapter) EventsCh() <-chan engine.Event { return e.ch }
+func (e *engineAdapter) ErrorsCh() <-chan error        { return e.conn.ErrorsCh() }
 
 // ── mockConnection ───────────────────────────────────────────────────────────
 

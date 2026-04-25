@@ -119,7 +119,7 @@ kuda uses a common telnet state machine that negotiates capabilities (GMCP, MCCP
 - [x] implement MCCP (compression) for performance.
 
 ### M3 — Aardwolf & Advanced Protocols
-- [ ] GMCP parsing and state management.
+- [/] GMCP parsing and state management (negotiation + vitals/room parsing).
 - [ ] MSP support.
 
 ### M4 — Extensibility

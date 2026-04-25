@@ -7,6 +7,7 @@ import (
 	"github.com/charmbracelet/bubbles/textinput"
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/mirageglobe/kuda/engine"
 	"github.com/muesli/reflow/wordwrap"
 )
 
@@ -28,6 +29,7 @@ var statusHint = hintStyle.Render("[ esc: server list  ctrl+c: quit ]")
 // ClientModel is the main connected-session view.
 type ClientModel struct {
 	client   Connection
+	engine   engine.GameState
 	viewport viewport.Model
 	input    textinput.Model
 	history  *strings.Builder // raw history with ANSI codes
@@ -35,7 +37,7 @@ type ClientModel struct {
 	height   int
 }
 
-func NewClientModel(client Connection) ClientModel {
+func NewClientModel(client Connection, state engine.GameState) ClientModel {
 	ti := textinput.New()
 	ti.Placeholder = "type a command..."
 	ti.Focus()
@@ -45,6 +47,7 @@ func NewClientModel(client Connection) ClientModel {
 
 	return ClientModel{
 		client:   client,
+		engine:   state,
 		input:    ti,
 		viewport: vp,
 		history:  &strings.Builder{},
@@ -112,7 +115,7 @@ func (m ClientModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.width = msg.Width
 		m.height = msg.Height
 		m.viewport.Width = msg.Width
-		m.viewport.Height = msg.Height - 4 // input + hint + 2 spacing lines
+		m.viewport.Height = msg.Height - 5 // input + status + hint + 2 spacing lines
 		m.input.Width = msg.Width
 		m.refreshViewport()
 
@@ -160,5 +163,22 @@ func (m ClientModel) View() string {
 	if content == "" {
 		content = "Waiting for data..."
 	}
-	return fmt.Sprintf("%s\n%s\n%s", content, m.input.View(), statusHint)
+
+	// Render Status Bar
+	v := m.engine.Vitals()
+	room := m.engine.Room()
+	name := m.engine.CharName()
+	if name == "" {
+		name = "Connecting..."
+	}
+
+	statusBar := fmt.Sprintf(" %s | HP %d/%d | MN %d/%d | MV %d/%d | %s",
+		logoStyle.Render(name),
+		v.HP, v.MaxHP,
+		v.Mana, v.MaxMana,
+		v.Move, v.MaxMove,
+		subtitleStyle.Render(room.Name),
+	)
+
+	return fmt.Sprintf("%s\n%s\n%s\n%s", content, statusBar, m.input.View(), statusHint)
 }
