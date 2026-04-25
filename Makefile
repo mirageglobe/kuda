@@ -9,7 +9,7 @@
 # ============================================================ configuration = #
 ################################################################################
 
-.PHONY: all build test clean help
+.PHONY: all build test lint clean help
 
 # set default target
 .DEFAULT_GOAL := help
@@ -37,8 +37,12 @@ run: build                                              ## build and run Kuda
 
 ##@ Testing
 
-test:                                                   ## run project tests
+test: lint                                              ## run project tests (includes lint)
 	@go test ./...
+
+lint:                                                   ## run go vet and golangci-lint
+	@go vet ./...
+	@golangci-lint run ./...
 
 ##@ Cleanup
 
