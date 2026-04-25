@@ -7,6 +7,7 @@ import (
 	"github.com/charmbracelet/bubbles/textinput"
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/muesli/reflow/wordwrap"
 )
 
 // ReturnToLauncherMsg signals that the user wants to return to the server list.
@@ -29,7 +30,7 @@ type ClientModel struct {
 	client   Connection
 	viewport viewport.Model
 	input    textinput.Model
-	history  *strings.Builder // pointer: strings.Builder must not be copied after first write
+	history  *strings.Builder // raw history with ANSI codes
 	width    int
 	height   int
 }
@@ -48,6 +49,17 @@ func NewClientModel(client Connection) ClientModel {
 		viewport: vp,
 		history:  &strings.Builder{},
 	}
+}
+
+func (m *ClientModel) refreshViewport() {
+	if m.width <= 0 {
+		return
+	}
+	// wordwrap.String is ANSI-aware. wrapping ensures colors don't bleed
+	// and text doesn't overflow horizontally.
+	wrapped := wordwrap.String(m.history.String(), m.width)
+	m.viewport.SetContent(wrapped)
+	m.viewport.GotoBottom()
 }
 
 func (m ClientModel) Init() tea.Cmd {
@@ -90,8 +102,7 @@ func (m ClientModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if cmd != "" {
 				if err := m.client.Write([]byte(cmd + "\n")); err != nil {
 					fmt.Fprintf(m.history, "\n[ ERROR: %v ]\n", err)
-					m.viewport.SetContent(m.history.String())
-					m.viewport.GotoBottom()
+					m.refreshViewport()
 				}
 				m.input.SetValue("")
 			}
@@ -103,6 +114,7 @@ func (m ClientModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.viewport.Width = msg.Width
 		m.viewport.Height = msg.Height - 4 // input + hint + 2 spacing lines
 		m.input.Width = msg.Width
+		m.refreshViewport()
 
 	case NetworkEventMsg:
 		switch msg.Event.Type {
@@ -113,8 +125,7 @@ func (m ClientModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			text = strings.ReplaceAll(text, "\r", "\n")
 			text = strings.ReplaceAll(text, "\x00", "") // strip remaining nulls
 			m.history.WriteString(text)
-			m.viewport.SetContent(m.history.String())
-			m.viewport.GotoBottom()
+			m.refreshViewport()
 		case EventTelnetCommand:
 			if len(msg.Event.Data) >= 2 {
 				cmd := msg.Event.Data[0]
@@ -132,8 +143,7 @@ func (m ClientModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case ErrorMsg:
 		fmt.Fprintf(m.history, "\n[ ERROR: %v ]\n", msg.Err)
-		m.viewport.SetContent(m.history.String())
-		m.viewport.GotoBottom()
+		m.refreshViewport()
 		return m, tea.Quit
 	}
 
@@ -150,4 +160,3 @@ func (m ClientModel) View() string {
 	}
 	return fmt.Sprintf("%s\n%s\n%s", content, m.input.View(), statusHint)
 }
-
