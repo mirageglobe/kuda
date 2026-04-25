@@ -119,8 +119,7 @@ kuda uses a common telnet state machine that negotiates capabilities (GMCP, MCCP
 - [x] implement MCCP (compression) for performance.
 
 ### M3 — Aardwolf & Advanced Protocols
-- [/] GMCP parsing and state management (negotiation + vitals/room parsing).
-- [ ] MSP support.
+- [x] GMCP parsing and state management.
 
 ### M4 — Extensibility
 - [ ] integrate Lua for user-defined triggers/aliases.
@@ -134,9 +133,10 @@ kuda uses a common telnet state machine that negotiates capabilities (GMCP, MCCP
 - establish project structure for engine, network, ui, and mapper packages.
 
 ### Ideas
+- MSP (MUD Sound Protocol) support.
 - scrollback buffer with search.
 - split-pane layout (main output + status/map panel).
-- ANSI colour support and stripping.
+- ANSI colour support and stripping. (completed)
 - auto-reconnect with configurable backoff.
 - Aardwolf-specific GMCP module handlers (character stats, room info, inventory).
 - visual mapper with room graph rendering.
