@@ -8,8 +8,9 @@ import (
 
 // Engine is the central brain that consumes network events and updates state.
 type Engine struct {
-	state  *state
-	source EventSource
+	state   *state
+	source  EventSource
+	scripts *ScriptEngine
 }
 
 var _ GameState = (*Engine)(nil)
@@ -19,6 +20,7 @@ func NewEngine(source EventSource) *Engine {
 		state:  &state{},
 		source: source,
 	}
+	e.scripts = newScriptEngine(e)
 	go e.listen()
 	return e
 }
@@ -27,15 +29,34 @@ func (e *Engine) Room() RoomInfo     { return e.state.Room() }
 func (e *Engine) Vitals() VitalsInfo { return e.state.Vitals() }
 func (e *Engine) CharName() string   { return e.state.CharName() }
 
+// Execute runs a command through the alias engine and sends it to the server.
+func (e *Engine) Execute(cmd string) error {
+	newCmd, swallowed := e.scripts.evalAlias(cmd)
+	if swallowed {
+		return nil
+	}
+	return e.source.Write([]byte(newCmd + "\n"))
+}
+
 func (e *Engine) listen() {
 	for {
 		select {
 		case ev, ok := <-e.source.EventsCh():
 			if !ok {
+				e.scripts.Close()
 				return
 			}
-			if ev.Type == EventGMCP {
+			switch ev.Type {
+			case EventGMCP:
 				e.handleGMCP(ev.Data)
+			case EventText:
+				// Split into lines for trigger evaluation
+				lines := strings.Split(string(ev.Data), "\n")
+				for _, l := range lines {
+					if l != "" {
+						e.scripts.evalTrigger(l)
+					}
+				}
 			}
 		case <-e.source.ErrorsCh():
 			// ignore errors for now, main.go handles connection drops

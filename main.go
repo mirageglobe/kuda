@@ -190,6 +190,7 @@ func newEngineAdapter(conn ui.Connection) *engineAdapter {
 
 func (e *engineAdapter) EventsCh() <-chan engine.Event { return e.ch }
 func (e *engineAdapter) ErrorsCh() <-chan error        { return e.conn.ErrorsCh() }
+func (e *engineAdapter) Write(data []byte) error       { return e.conn.Write(data) }
 
 // ── mockConnection ───────────────────────────────────────────────────────────
 

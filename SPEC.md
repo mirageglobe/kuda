@@ -122,7 +122,7 @@ kuda uses a common telnet state machine that negotiates capabilities (GMCP, MCCP
 - [x] GMCP parsing and state management.
 
 ### M4 — Extensibility
-- [ ] integrate Lua for user-defined triggers/aliases.
+- [/] integrate Lua for user-defined triggers/aliases (VM embedded, basic API).
 - [ ] basic mapper implementation for visual room tracking.
 
 ---

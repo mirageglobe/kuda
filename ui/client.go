@@ -102,10 +102,8 @@ func (m ClientModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, func() tea.Msg { return ReturnToLauncherMsg{} }
 		case tea.KeyEnter:
 			cmd := m.input.Value()
-			// Send the command + newline. We allow empty strings because 
-			// MUDs often require a blank "Enter" to continue through 
-			// pagination prompts (e.g. "[ Press Return to continue ]").
-			if err := m.client.Write([]byte(cmd + "\n")); err != nil {
+			// Process command through the engine (aliases/scripting)
+			if err := m.engine.Execute(cmd); err != nil {
 				fmt.Fprintf(m.history, "\n[ ERROR: %v ]\n", err)
 				m.refreshViewport()
 			}
