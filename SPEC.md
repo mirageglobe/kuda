@@ -10,7 +10,19 @@
 
 ---
 
-## 2. Technology Stack
+## 2. Complexity Score
+
+| Dimension | Score | Notes |
+| :--- | :--- | :--- |
+| overall | 3 / 5 | moderate; multi-package Go with protocol parsing and Lua scripting |
+| network layer | 3 / 5 | telnet state machine, GMCP framing, channel-based i/o |
+| engine / lua | 4 / 5 | embedded Lua VM, trigger/alias eval, GMCP-fed state |
+| ui / tui | 2 / 5 | standard bubbletea patterns, two simple models |
+| mapper | 3 / 5 | room graph traversal, map rendering |
+
+---
+
+## 3. Technology Stack
 
 | Tool | Purpose |
 | :--- | :--- |
@@ -20,7 +32,7 @@
 
 ---
 
-## 3. Architecture
+## 4. Architecture
 
 ```
 kuda/
@@ -62,7 +74,7 @@ cross-package communication is enforced via interfaces. concrete types must not 
 
 ---
 
-## 5. Decisions
+## 5. Architecture Decisions
 
 key architectural choices recorded here so they are not accidentally reversed.
 
@@ -80,7 +92,7 @@ the telnet state machine replies `WONT`/`DONT` to any option it does not explici
 
 ---
 
-## 4. Development Roadmap
+## 6. Development Roadmap
 
 ### Milestones
 
