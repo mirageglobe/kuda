@@ -1,0 +1,49 @@
+package ui
+
+import (
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
+)
+
+// SplashDoneMsg signals that the splash screen has been dismissed.
+type SplashDoneMsg struct{}
+
+const asciiLogo = ` _  ___   _ ___   _
+| |/ / | | |   \ /_\
+|   <| |_| | |) / _ \
+|_|\_\\__,_|___/_/ \_\`
+
+// SplashModel is the opening screen shown on launch.
+type SplashModel struct {
+	width  int
+	height int
+}
+
+func NewSplashModel() SplashModel { return SplashModel{} }
+
+func (m SplashModel) Init() tea.Cmd { return nil }
+
+func (m SplashModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	switch msg := msg.(type) {
+	case tea.WindowSizeMsg:
+		m.width, m.height = msg.Width, msg.Height
+		return m, nil
+	case tea.KeyMsg:
+		if msg.String() == "ctrl+c" {
+			return m, tea.Quit
+		}
+		return m, func() tea.Msg { return SplashDoneMsg{} }
+	}
+	return m, nil
+}
+
+func (m SplashModel) View() string {
+	content := logoStyle.Render(asciiLogo) +
+		"\n\n" + subtitleStyle.Render("a modern mud client") +
+		"\n\n" + hintStyle.Render("press any key")
+
+	if m.width > 0 && m.height > 0 {
+		return lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center, content)
+	}
+	return content
+}

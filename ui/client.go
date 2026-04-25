@@ -9,6 +9,9 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
+// ReturnToLauncherMsg signals that the user wants to return to the server list.
+type ReturnToLauncherMsg struct{}
+
 // NetworkEventMsg wraps a network event for bubbletea.
 type NetworkEventMsg struct {
 	Event Event
@@ -18,6 +21,8 @@ type NetworkEventMsg struct {
 type ErrorMsg struct {
 	Err error
 }
+
+var statusHint = hintStyle.Render("[ esc: server list  ctrl+c: quit ]")
 
 // ClientModel is the main connected-session view.
 type ClientModel struct {
@@ -31,7 +36,7 @@ type ClientModel struct {
 
 func NewClientModel(client Connection) ClientModel {
 	ti := textinput.New()
-	ti.Placeholder = "Type a command..."
+	ti.Placeholder = "type a command..."
 	ti.Focus()
 
 	vp := viewport.New(0, 0)
@@ -76,8 +81,10 @@ func (m ClientModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.Type {
-		case tea.KeyCtrlC, tea.KeyEsc:
+		case tea.KeyCtrlC:
 			return m, tea.Quit
+		case tea.KeyEsc:
+			return m, func() tea.Msg { return ReturnToLauncherMsg{} }
 		case tea.KeyEnter:
 			cmd := m.input.Value()
 			if cmd != "" {
@@ -94,7 +101,7 @@ func (m ClientModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.width = msg.Width
 		m.height = msg.Height
 		m.viewport.Width = msg.Width
-		m.viewport.Height = msg.Height - 3
+		m.viewport.Height = msg.Height - 4 // input + hint + 2 spacing lines
 		m.input.Width = msg.Width
 
 	case NetworkEventMsg:
@@ -125,5 +132,6 @@ func (m ClientModel) View() string {
 	if content == "" {
 		content = "Waiting for data..."
 	}
-	return fmt.Sprintf("%s\n\n%s", content, m.input.View())
+	return fmt.Sprintf("%s\n%s\n%s", content, m.input.View(), statusHint)
 }
+
