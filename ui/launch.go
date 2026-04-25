@@ -27,8 +27,9 @@ func (i item) Description() string { return i.desc }
 func (i item) FilterValue() string { return i.title }
 
 type LaunchModel struct {
-	list   list.Model
-	errMsg string
+	list       list.Model
+	errMsg     string
+	connecting bool
 }
 
 // MockAddress is the sentinel address that triggers the in-process echo connection.
@@ -50,14 +51,19 @@ func (m LaunchModel) Init() tea.Cmd { return nil }
 func (m LaunchModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
+		if m.connecting {
+			return m, nil
+		}
 		switch msg.String() {
 		case "enter":
 			i := m.list.SelectedItem().(item)
+			m.connecting = true
 			return m, func() tea.Msg { return ServerSelectedMsg{Address: i.desc} }
 		case "q", "ctrl+c":
 			return m, tea.Quit
 		}
 	case ConnectErrorMsg:
+		m.connecting = false
 		m.errMsg = fmt.Sprintf("[ ERROR: %v ]", msg.Err)
 		return m, nil
 	case tea.WindowSizeMsg:
@@ -70,8 +76,12 @@ func (m LaunchModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m LaunchModel) View() string {
-	if m.errMsg != "" {
-		return m.list.View() + "\n" + m.errMsg
+	view := m.list.View()
+	if m.connecting {
+		return view + "\n" + hintStyle.Render("Connecting...")
 	}
-	return m.list.View()
+	if m.errMsg != "" {
+		return view + "\n" + m.errMsg
+	}
+	return view
 }
