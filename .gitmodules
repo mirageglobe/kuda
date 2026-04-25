@@ -1,6 +1,0 @@
-[submodule "src/website/themes/beautifulhugo"]
-	path = src/website/themes/beautifulhugo
-	url = https://github.com/halogenica/beautifulhugo.git
-[submodule "src/website/themes/ananke"]
-	path = src/website/themes/ananke
-	url = https://github.com/theNewDynamic/gohugo-theme-ananke

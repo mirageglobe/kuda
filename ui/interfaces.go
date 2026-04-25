@@ -1,11 +1,25 @@
 package ui
 
-import "github.com/mirageglobe/kuda/network"
+// EventType categorises events the ui receives from the network layer.
+type EventType int
 
-// Connection is the subset of network.Client that ui requires.
+const (
+	EventText          EventType = iota
+	EventGMCP
+	EventTelnetCommand
+)
+
+// Event is ui's view of a network event.
+// The adapter in main.go converts network.Event to this type.
+type Event struct {
+	Type EventType
+	Data []byte
+}
+
+// Connection is the subset of the network client that ui requires.
 // Depend on this interface, not *network.Client directly.
 type Connection interface {
 	Write(data []byte) error
-	EventsCh() <-chan network.Event
+	EventsCh() <-chan Event
 	ErrorsCh() <-chan error
 }

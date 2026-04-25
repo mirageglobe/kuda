@@ -13,22 +13,19 @@ func TestClient_TelnetParsing(t *testing.T) {
 	defer clientConn.Close()
 	defer serverConn.Close()
 
-	// Server side reader to prevent blocking on handleNegotiation writes
-	go func() {
-		io.Copy(io.Discard, serverConn)
-	}()
+	// drain server side so handleNegotiation writes don't block
+	go func() { io.Copy(io.Discard, serverConn) }() //nolint:errcheck
 
-	client := NewClient()
-	client.Conn = clientConn
+	client := newClientWithConn(clientConn)
 	go client.listen()
 
-	// Test case 1: Normal text
-	serverConn.Write([]byte("hello"))
-	
-	expected := "hello"
-	for _, char := range expected {
+	events := client.EventsCh()
+
+	// case 1: normal text
+	serverConn.Write([]byte("hello")) //nolint:errcheck
+	for _, char := range "hello" {
 		select {
-		case ev := <-client.Events:
+		case ev := <-events:
 			if ev.Type != EventText || string(ev.Data) != string(char) {
 				t.Errorf("expected %c, got %v", char, ev)
 			}
@@ -37,32 +34,28 @@ func TestClient_TelnetParsing(t *testing.T) {
 		}
 	}
 
-	// Test case 2: Stripping IAC WILL ECHO
-	serverConn.Write([]byte{IAC, WILL, TelnetOptionEcho, 'w'})
-	
-	gotNegotiation := false
-	gotW := false
-	
+	// case 2: IAC WILL ECHO stripped to negotiation event + following text
+	serverConn.Write([]byte{IAC, WILL, TelnetOptionEcho, 'w'}) //nolint:errcheck
+
+	gotNegotiation, gotW := false, false
 	for i := 0; i < 2; i++ {
 		select {
-		case ev := <-client.Events:
-			if ev.Type == EventTelnetCommand {
-				if ev.Data[0] == WILL && ev.Data[1] == TelnetOptionEcho {
-					gotNegotiation = true
-				}
-			} else if ev.Type == EventText && string(ev.Data) == "w" {
+		case ev := <-events:
+			switch {
+			case ev.Type == EventTelnetCommand && ev.Data[0] == WILL && ev.Data[1] == TelnetOptionEcho:
+				gotNegotiation = true
+			case ev.Type == EventText && string(ev.Data) == "w":
 				gotW = true
 			}
 		case <-time.After(500 * time.Millisecond):
-			t.Errorf("timeout waiting for events, gotNegotiation=%v, gotW=%v", gotNegotiation, gotW)
+			t.Errorf("timeout: gotNegotiation=%v gotW=%v", gotNegotiation, gotW)
 		}
 	}
-
 	if !gotNegotiation {
-		t.Error("did not get expected Telnet negotiation event")
+		t.Error("did not receive telnet negotiation event")
 	}
 	if !gotW {
-		t.Error("did not get expected 'w' text")
+		t.Error("did not receive 'w' text event")
 	}
 }
 
@@ -71,30 +64,26 @@ func TestClient_GMCPCapture(t *testing.T) {
 	defer clientConn.Close()
 	defer serverConn.Close()
 
-	go func() {
-		io.Copy(io.Discard, serverConn)
-	}()
+	go func() { io.Copy(io.Discard, serverConn) }() //nolint:errcheck
 
-	client := NewClient()
-	client.Conn = clientConn
+	client := newClientWithConn(clientConn)
 	go client.listen()
 
-	// Send GMCP: IAC SB GMCP "core.ping" IAC SE
+	// IAC SB GMCP <data> IAC SE
 	gmcpData := []byte("core.ping")
 	payload := append([]byte{IAC, SB, TelnetOptionGMCP}, gmcpData...)
 	payload = append(payload, IAC, SE)
-	
-	serverConn.Write(payload)
+	serverConn.Write(payload) //nolint:errcheck
 
 	select {
-	case ev := <-client.Events:
+	case ev := <-client.EventsCh():
 		if ev.Type != EventGMCP {
 			t.Errorf("expected EventGMCP, got %v", ev.Type)
 		}
 		if !bytes.Equal(ev.Data, gmcpData) {
-			t.Errorf("expected %s, got %s", string(gmcpData), string(ev.Data))
+			t.Errorf("expected %q, got %q", gmcpData, ev.Data)
 		}
 	case <-time.After(100 * time.Millisecond):
-		t.Fatal("timeout waiting for GMCP")
+		t.Fatal("timeout waiting for GMCP event")
 	}
 }

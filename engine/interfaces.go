@@ -1,11 +1,25 @@
 package engine
 
-import "github.com/mirageglobe/kuda/network"
+// EventType categorises events the engine receives from the network layer.
+type EventType int
 
-// EventSource is the subset of network.Client that engine consumes.
-// Engine reads events from network through this interface, not *network.Client directly.
+const (
+	EventText          EventType = iota
+	EventGMCP
+	EventTelnetCommand
+)
+
+// Event is the engine's internal representation of a network event.
+// The wiring layer (main.go) adapts network.Event to this type.
+type Event struct {
+	Type EventType
+	Data []byte
+}
+
+// EventSource is what engine consumes from the network layer.
+// Defined here so engine has no import dependency on network.
 type EventSource interface {
-	EventsCh() <-chan network.Event
+	EventsCh() <-chan Event
 	ErrorsCh() <-chan error
 }
 
