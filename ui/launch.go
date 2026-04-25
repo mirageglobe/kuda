@@ -35,10 +35,10 @@ type LaunchModel struct {
 const MockAddress = "mock://echo"
 
 func NewLaunchModel() LaunchModel {
-	items := []list.Item{
-		item{title: "Aardwolf", desc: "aardwolf.com:4000"},
-		item{title: "TorilMUD", desc: "torilmud.com:9999"},
-		item{title: "Local Echo (dev)", desc: MockAddress},
+	servers := GetServers()
+	items := make([]list.Item, len(servers))
+	for i, s := range servers {
+		items[i] = item{title: s.Name, desc: s.Address}
 	}
 	l := list.New(items, list.NewDefaultDelegate(), 0, 0)
 	l.Title = "Select a MUD"

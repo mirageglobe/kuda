@@ -13,28 +13,38 @@ import (
 // rootModel owns model transitions and network client creation.
 // It is the only place allowed to import both ui and network.
 type rootModel struct {
-	current tea.Model
+	current       tea.Model
+	width, height int
 }
 
 func (m rootModel) Init() tea.Cmd { return m.current.Init() }
 
 func (m rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
+	case tea.WindowSizeMsg:
+		m.width, m.height = msg.Width, msg.Height
+
 	case ui.SplashDoneMsg:
 		next := ui.NewLaunchModel()
 		m.current = next
-		return m, next.Init()
+		return m, tea.Batch(next.Init(), func() tea.Msg {
+			return tea.WindowSizeMsg{Width: m.width, Height: m.height}
+		})
 
 	case ui.ReturnToLauncherMsg:
 		next := ui.NewLaunchModel()
 		m.current = next
-		return m, next.Init()
+		return m, tea.Batch(next.Init(), func() tea.Msg {
+			return tea.WindowSizeMsg{Width: m.width, Height: m.height}
+		})
 
 	case ui.ServerSelectedMsg:
 		if msg.Address == ui.MockAddress {
 			next := ui.NewClientModel(newMockConnection())
 			m.current = next
-			return m, next.Init()
+			return m, tea.Batch(next.Init(), func() tea.Msg {
+				return tea.WindowSizeMsg{Width: m.width, Height: m.height}
+			})
 		}
 		client := network.NewClient()
 		return m, dialCmd(client, msg.Address)
@@ -47,7 +57,9 @@ func (m rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		next := ui.NewClientModel(msg.adapter)
 		m.current = next
-		return m, next.Init()
+		return m, tea.Batch(next.Init(), func() tea.Msg {
+			return tea.WindowSizeMsg{Width: m.width, Height: m.height}
+		})
 	}
 
 	var cmd tea.Cmd
