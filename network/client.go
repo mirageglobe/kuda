@@ -2,6 +2,7 @@ package network
 
 import (
 	"bufio"
+	"compress/zlib"
 	"fmt"
 	"io"
 	"net"
@@ -9,9 +10,10 @@ import (
 
 // Client represents a connection to a MUD server.
 type Client struct {
-	conn   net.Conn
-	events chan Event
-	errors chan error
+	conn        net.Conn
+	events      chan Event
+	errors      chan error
+	pendingMCCP bool
 }
 
 // NewClient creates a new network client.
@@ -63,6 +65,15 @@ func (c *Client) listen() {
 			return
 		}
 		p.handleByte(b)
+		if c.pendingMCCP {
+			c.pendingMCCP = false
+			zReader, err := zlib.NewReader(reader)
+			if err != nil {
+				c.errors <- fmt.Errorf("failed to start mccp decompression: %w", err)
+				continue
+			}
+			reader = bufio.NewReader(zReader)
+		}
 	}
 }
 

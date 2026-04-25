@@ -91,6 +91,9 @@ the telnet state machine replies `WONT`/`DONT` to any option it does not explici
 ### engine owns all game state
 `ui` and `mapper` are read-only consumers of state via `engine.GameState`. reason: if multiple views can mutate state, consistency bugs are inevitable and hard to trace. a single writer (engine) makes state transitions auditable and testable.
 
+### feature detection over mud-specific drivers
+kuda uses a common telnet state machine that negotiates capabilities (GMCP, MCCP, TTYPE) rather than using hardcoded "drivers" for different MUDs. reason: the Telnet RFC is designed for feature negotiation; sticking to this allows kuda to be universal while still supporting the advanced features of specific servers. mud-specific logic is handled by reacting to the *protocols* detected (e.g. enabling a mapper when GMCP room data is received).
+
 ---
 
 ## 6. Development Roadmap
@@ -113,7 +116,7 @@ the telnet state machine replies `WONT`/`DONT` to any option it does not explici
 
 ### M2 — Protocol Foundation
 - [x] basic Telnet negotiation (support for standard GA/ECHO).
-- [ ] implement MCCP (compression) for performance.
+- [x] implement MCCP (compression) for performance.
 
 ### M3 — Aardwolf & Advanced Protocols
 - [ ] GMCP parsing and state management.

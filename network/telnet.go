@@ -112,6 +112,10 @@ func (p *telnetParser) handleNegotiation(cmd, option byte) {
 			p.client.events <- Event{Type: EventTelnetCommand, Data: []byte{cmd, option}}
 			return
 		}
+		if option == TelnetOptionMCCP {
+			p.client.Write([]byte{IAC, DO, option}) //nolint:errcheck
+			return
+		}
 		p.client.Write([]byte{IAC, DONT, option}) //nolint:errcheck
 	case WONT:
 		if option == TelnetOptionEcho {
@@ -136,6 +140,9 @@ func (p *telnetParser) handleSubnegotiation(data []byte) {
 	switch data[0] {
 	case TelnetOptionGMCP:
 		p.client.events <- Event{Type: EventGMCP, Data: data[1:]}
+	case TelnetOptionMCCP:
+		p.flushText()
+		p.client.pendingMCCP = true
 	case TelnetOptionTTYPE:
 		if len(data) > 1 && data[1] == 1 { // SEND
 			// reply with IS KUDA
