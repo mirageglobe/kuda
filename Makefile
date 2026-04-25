@@ -30,12 +30,15 @@ all: build                                              ## default to building t
 
 build:                                                  ## build the Kuda binary
 	@printf "==> Building Kuda...\n"
-	@go build -o bin/kuda ./src/main.go
+	@go build -o bin/kuda ./main.go
+
+run: build                                              ## build and run Kuda
+	@./bin/kuda
 
 ##@ Testing
 
 test:                                                   ## run project tests
-	@go test ./src/...
+	@go test ./...
 
 ##@ Cleanup
 
