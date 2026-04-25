@@ -10,8 +10,7 @@ type Server struct {
 // GetServers returns the default list of MUD servers.
 func GetServers() []Server {
 	return []Server{
-		{Name: "Aardwolf", Address: "aardwolf.com:4000", Desc: "popular fantasy mud (port 4000)"},
-		{Name: "Aardwolf (Alt)", Address: "aardwolf.com:23", Desc: "standard telnet port (port 23)"},
+		{Name: "Aardwolf", Address: "aardmud.org:23", Desc: "popular fantasy mud"},
 		{Name: "TorilMUD", Address: "torilmud.com:9999", Desc: "forgotten realms mud"},
 		{Name: "Genesis MUD", Address: "genesismud.org:3011", Desc: "the original lpmud"},
 		{Name: "Local Echo (dev)", Address: MockAddress, Desc: "in-process echo for testing"},
