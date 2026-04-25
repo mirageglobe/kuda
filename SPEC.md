@@ -24,13 +24,59 @@
 
 ```
 kuda/
-├── network/       # TCP, Telnet, Protocol parsing (GMCP/MCCP)
-├── ui/            # TUI (Bubbletea)
-├── engine/        # Lua integration & State management
-├── mapper/        # Mapping logic
-├── main.go        # Entry point
-└── ...
+├── main.go             # entry point — launches bubbletea program
+├── network/            # tcp, telnet, gmcp parsing — no game logic
+│   ├── client.go       # tcp connection, telnet protocol state machine
+│   ├── client_test.go
+│   └── events.go       # event types and telnet/gmcp constants
+├── engine/             # game state, lua vm, triggers and aliases
+│   ├── engine.go       # engine lifecycle
+│   ├── state.go        # character/room/world state (fed by gmcp)
+│   └── lua.go          # lua vm integration
+├── mapper/             # room graph and map rendering
+│   └── mapper.go
+└── ui/                 # bubbletea tui views
+    ├── launch.go       # server selection screen
+    ├── client.go       # main connected session view
+    └── styles.go       # shared lipgloss styles
 ```
+
+### Package Responsibilities
+
+| Package | Owns | Does NOT own |
+| :--- | :--- | :--- |
+| `network` | tcp i/o, telnet state machine, gmcp framing | game state, ui state |
+| `engine` | lua vm lifecycle, trigger/alias eval, gmcp-fed state | rendering, network i/o |
+| `mapper` | room graph, map rendering | game state (reads from engine) |
+| `ui` | bubbletea models, view rendering, input handling | business logic, network calls |
+
+### Interfaces
+
+cross-package communication is enforced via interfaces. concrete types must not be imported across boundaries.
+
+| Interface | Defined in | Implemented by | Used by |
+| :--- | :--- | :--- | :--- |
+| `ui.Connection` | `ui/interfaces.go` | `*network.Client` | `ui.ClientModel` |
+| `engine.EventSource` | `engine/interfaces.go` | `*network.Client` | `engine.Engine` (future) |
+| `engine.GameState` | `engine/interfaces.go` | `engine.Engine` (future) | `ui`, `mapper` |
+
+---
+
+## 5. Decisions
+
+key architectural choices recorded here so they are not accidentally reversed.
+
+### bubbletea model-per-screen
+launch and connected session are separate bubbletea models (`LaunchModel`, `ClientModel`), not a single model with a mode flag. reason: each screen has entirely different state and keybindings; merging them creates a god-struct that is hard to test and extend.
+
+### channel-based network events
+`network.Client` emits events on a buffered channel rather than using callbacks or a synchronous read loop in `ui`. reason: bubbletea requires commands (functions returning `tea.Msg`) to integrate with its event loop. the channel + `waitForNetworkEvent` cmd pattern is the idiomatic bubbletea approach for external i/o.
+
+### telnet default-refuse negotiation
+the telnet state machine replies `WONT`/`DONT` to any option it does not explicitly support. reason: prevents infinite negotiation loops with servers that keep re-offering options. explicit support is added per option as needed.
+
+### engine owns all game state
+`ui` and `mapper` are read-only consumers of state via `engine.GameState`. reason: if multiple views can mutate state, consistency bugs are inevitable and hard to trace. a single writer (engine) makes state transitions auditable and testable.
 
 ---
 

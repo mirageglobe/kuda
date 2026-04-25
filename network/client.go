@@ -160,6 +160,12 @@ func (c *Client) handleSubnegotiation(data []byte) {
 	}
 }
 
+// EventsCh returns the read-only event channel for use by consumers.
+func (c *Client) EventsCh() <-chan Event { return c.Events }
+
+// ErrorsCh returns the read-only error channel for use by consumers.
+func (c *Client) ErrorsCh() <-chan error { return c.Errors }
+
 // Write sends raw bytes to the server.
 func (c *Client) Write(data []byte) error {
 	if c.Conn == nil {

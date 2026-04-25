@@ -22,4 +22,30 @@ this document is intended for ai coding assistants working in the `kuda` directo
 - **scripting**: lua for triggers and aliases.
 - **testing**: follow idiomatic go testing patterns.
 - **no emojis**: use plain ascii or unicode characters for all content.
-- **comments**: add concise inline comments explaining logic where helpful.
+- **comments**: add concise inline comments explaining non-obvious logic.
+
+## package boundaries — do not cross
+
+each package has a strict ownership boundary documented in its `doc.go`. violations will cause architectural drift that is hard to reverse.
+
+| do NOT | instead |
+| :--- | :--- |
+| add game logic (state, triggers) to `network/` | put it in `engine/` |
+| call network i/o from `ui/` | pass a `ui.Connection` interface |
+| call network i/o from `engine/` | pass an `engine.EventSource` interface |
+| read/write game state from `ui/` or `mapper/` | read through `engine.GameState` interface |
+| merge `LaunchModel` and `ClientModel` into one struct | keep them as separate bubbletea models |
+| add rendering logic to `engine/` or `mapper/` | rendering belongs in `ui/` |
+| depend on `*network.Client` directly outside `network/` | use the defined interface |
+
+## interface contracts
+
+- `ui.Connection` — what `ui` requires from the network layer (`ui/interfaces.go`)
+- `engine.EventSource` — what `engine` consumes from network (`engine/interfaces.go`)
+- `engine.GameState` — read-only state exposed to `ui` and `mapper` (`engine/interfaces.go`)
+
+compile-time interface checks (`var _ Interface = (*Impl)(nil)`) are present in each consumer package. do not remove them.
+
+## file size guideline
+
+keep individual `.go` files under ~150 lines. if a file is growing beyond that, split by responsibility rather than adding to it.
