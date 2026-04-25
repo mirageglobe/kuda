@@ -9,22 +9,22 @@ versions follow [semantic versioning](https://semver.org/).
 ## [unreleased]
 
 ### added
-- `AGENT.md` with ai assistant guidelines for this project
+- `AGENTS.md` with ai assistant guidelines for this project
 - `SPEC.md` with project specification and architecture
 - `CHANGELOG.md` (this file)
-- `CLAUDE.md` symlink pointing to `AGENT.md`
+- `GEMINI.md` and `CLAUDE.md` symlinks pointing to `AGENTS.md`
+- `Makefile` for building and testing
+- `Brewfile` with project dependencies
+- basic project structure in root folder
 
 ---
 
 ## [v0.1.0] — 2026-04-24
 
 ### added
-- plantuml map for old cathedral zone (multi-level: -1 to +2)
-- plantuml map for mayhem zone (balcony section)
-- graphviz example map (`example.dot`)
-- mermaid example map (`example.mmd`)
-- ascii text example (`example.atxt`)
-- hugo website scaffold with ananke theme
-- `Makefile` with `maps`, `website`, `website-develop` targets
-- `Brewfile` with graphviz and hugo dependencies
-- `.gitignore` for generated svgs and vim swap files
+- initial project setup for go-based mud client
+- `.gitignore` for binaries and common temporary files
+
+### changed
+- moved source files from `src/` to root for idiomatic go structure
+- cleaned up legacy references to hugo and mapping tools
