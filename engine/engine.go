@@ -5,20 +5,21 @@ import (
 	"encoding/json"
 	"strings"
 )
-
 // Engine is the central brain that consumes network events and updates state.
 type Engine struct {
-	state   *state
-	source  EventSource
-	scripts *ScriptEngine
+	state      *state
+	source     EventSource
+	scripts    *ScriptEngine
+	luaEnabled bool
 }
 
 var _ GameState = (*Engine)(nil)
 
 func NewEngine(source EventSource) *Engine {
 	e := &Engine{
-		state:  &state{},
-		source: source,
+		state:      &state{},
+		source:     source,
+		luaEnabled: true,
 	}
 	e.scripts = newScriptEngine(e)
 	go e.listen()
@@ -29,13 +30,22 @@ func (e *Engine) Room() RoomInfo     { return e.state.Room() }
 func (e *Engine) Vitals() VitalsInfo { return e.state.Vitals() }
 func (e *Engine) CharName() string   { return e.state.CharName() }
 
+// ToggleLua enables or disables the script engine.
+func (e *Engine) ToggleLua() bool {
+	e.luaEnabled = !e.luaEnabled
+	return e.luaEnabled
+}
+
 // Execute runs a command through the alias engine and sends it to the server.
 func (e *Engine) Execute(cmd string) error {
-	newCmd, swallowed := e.scripts.evalAlias(cmd)
-	if swallowed {
-		return nil
+	if e.luaEnabled {
+		newCmd, swallowed := e.scripts.evalAlias(cmd)
+		if swallowed {
+			return nil
+		}
+		return e.source.Write([]byte(newCmd + "\n"))
 	}
-	return e.source.Write([]byte(newCmd + "\n"))
+	return e.source.Write([]byte(cmd + "\n"))
 }
 
 func (e *Engine) listen() {
@@ -50,15 +60,19 @@ func (e *Engine) listen() {
 			case EventGMCP:
 				e.handleGMCP(ev.Data)
 			case EventText:
-				// Split into lines for trigger evaluation
-				lines := strings.Split(string(ev.Data), "\n")
-				for _, l := range lines {
-					if l != "" {
-						e.scripts.evalTrigger(l)
+				if e.luaEnabled {
+					// Split into lines for trigger evaluation
+					lines := strings.Split(string(ev.Data), "\n")
+					for _, l := range lines {
+						if l != "" {
+							e.scripts.evalTrigger(l)
+						}
 					}
 				}
 			}
 		case <-e.source.ErrorsCh():
+// ...
+
 			// ignore errors for now, main.go handles connection drops
 		}
 	}
