@@ -17,7 +17,7 @@ type Client struct {
 // NewClient creates a new network client.
 func NewClient() *Client {
 	return &Client{
-		events: make(chan Event, 100),
+		events: make(chan Event, 1024),
 		errors: make(chan error, 10),
 	}
 }
@@ -55,6 +55,7 @@ func (c *Client) listen() {
 	for {
 		b, err := reader.ReadByte()
 		if err != nil {
+			p.flushText() // ensure last bits are sent
 			if err != io.EOF {
 				c.errors <- err
 			}

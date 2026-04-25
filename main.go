@@ -98,7 +98,7 @@ var _ ui.Connection = (*clientAdapter)(nil)
 func newClientAdapter(client *network.Client) *clientAdapter {
 	a := &clientAdapter{
 		client: client,
-		events: make(chan ui.Event, 100),
+		events: make(chan ui.Event, 1024),
 	}
 	go a.forward()
 	return a

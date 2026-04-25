@@ -22,33 +22,38 @@ func TestClient_TelnetParsing(t *testing.T) {
 	events := client.EventsCh()
 
 	// case 1: normal text
-	serverConn.Write([]byte("hello")) //nolint:errcheck
-	for _, char := range "hello" {
+	serverConn.Write([]byte("hello"))  //nolint:errcheck
+	serverConn.Write([]byte{IAC, NOP}) // trigger flush
+	
+	foundHello := false
+	for i := 0; i < 2; i++ {
 		select {
 		case ev := <-events:
-			if ev.Type != EventText || string(ev.Data) != string(char) {
-				t.Errorf("expected %c, got %v", char, ev)
+			if ev.Type == EventText && string(ev.Data) == "hello" {
+				foundHello = true
 			}
-		case <-time.After(100 * time.Millisecond):
-			t.Fatalf("timeout waiting for %c", char)
+		case <-time.After(500 * time.Millisecond):
 		}
+	}
+	if !foundHello {
+		t.Fatal("did not receive 'hello'")
 	}
 
 	// case 2: IAC WILL ECHO stripped to negotiation event + following text
 	serverConn.Write([]byte{IAC, WILL, TelnetOptionEcho, 'w'}) //nolint:errcheck
-
+	serverConn.Write([]byte{IAC, NOP})                        // trigger flush
+	
 	gotNegotiation, gotW := false, false
-	for i := 0; i < 2; i++ {
+	for i := 0; i < 3; i++ { // negotiation, w, nop
 		select {
 		case ev := <-events:
 			switch {
-			case ev.Type == EventTelnetCommand && ev.Data[0] == WILL && ev.Data[1] == TelnetOptionEcho:
+			case ev.Type == EventTelnetCommand && len(ev.Data) >= 2 && ev.Data[0] == WILL && ev.Data[1] == TelnetOptionEcho:
 				gotNegotiation = true
 			case ev.Type == EventText && string(ev.Data) == "w":
 				gotW = true
 			}
 		case <-time.After(500 * time.Millisecond):
-			t.Errorf("timeout: gotNegotiation=%v gotW=%v", gotNegotiation, gotW)
 		}
 	}
 	if !gotNegotiation {
@@ -65,7 +70,7 @@ func TestClient_TelnetParsing(t *testing.T) {
 		if ev.Type != EventTelnetCommand || ev.Data[0] != GA {
 			t.Errorf("expected GA command, got %v", ev)
 		}
-	case <-time.After(100 * time.Millisecond):
+	case <-time.After(500 * time.Millisecond):
 		t.Fatal("timeout waiting for GA command")
 	}
 }

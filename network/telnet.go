@@ -15,24 +15,36 @@ const (
 
 // telnetParser holds per-connection telnet state machine state.
 type telnetParser struct {
-	client *Client
-	state  parserState
-	sbBuf  []byte
+	client  *Client
+	state   parserState
+	sbBuf   []byte
+	textBuf []byte
+}
+
+func (p *telnetParser) flushText() {
+	if len(p.textBuf) > 0 {
+		p.client.events <- Event{Type: EventText, Data: p.textBuf}
+		p.textBuf = nil
+	}
 }
 
 func (p *telnetParser) handleByte(b byte) {
 	switch p.state {
 	case stateText:
 		if b == IAC {
+			p.flushText()
 			p.state = stateIAC
 		} else {
-			p.client.events <- Event{Type: EventText, Data: []byte{b}}
+			p.textBuf = append(p.textBuf, b)
+			if len(p.textBuf) >= 512 { // flush large blocks early
+				p.flushText()
+			}
 		}
 
 	case stateIAC:
 		switch b {
 		case IAC:
-			p.client.events <- Event{Type: EventText, Data: []byte{IAC}}
+			p.textBuf = append(p.textBuf, IAC)
 			p.state = stateText
 		case GA:
 			p.client.events <- Event{Type: EventTelnetCommand, Data: []byte{GA}}
@@ -108,13 +120,28 @@ func (p *telnetParser) handleNegotiation(cmd, option byte) {
 			return
 		}
 	case DO:
+		if option == TelnetOptionTTYPE {
+			p.client.Write([]byte{IAC, WILL, option}) //nolint:errcheck
+			return
+		}
 		p.client.Write([]byte{IAC, WONT, option}) //nolint:errcheck
 	}
 	p.client.events <- Event{Type: EventTelnetCommand, Data: []byte{cmd, option}}
 }
 
 func (p *telnetParser) handleSubnegotiation(data []byte) {
-	if len(data) > 0 && data[0] == TelnetOptionGMCP {
+	if len(data) == 0 {
+		return
+	}
+	switch data[0] {
+	case TelnetOptionGMCP:
 		p.client.events <- Event{Type: EventGMCP, Data: data[1:]}
+	case TelnetOptionTTYPE:
+		if len(data) > 1 && data[1] == 1 { // SEND
+			// reply with IS KUDA
+			p.client.Write([]byte{IAC, SB, TelnetOptionTTYPE, 0})           // IS
+			p.client.Write([]byte("KUDA"))                                 // terminal name
+			p.client.Write([]byte{IAC, SE})                                // end
+		}
 	}
 }
