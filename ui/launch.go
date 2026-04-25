@@ -31,10 +31,14 @@ type LaunchModel struct {
 	errMsg string
 }
 
+// MockAddress is the sentinel address that triggers the in-process echo connection.
+const MockAddress = "mock://echo"
+
 func NewLaunchModel() LaunchModel {
 	items := []list.Item{
 		item{title: "Aardwolf", desc: "aardwolf.com:4000"},
 		item{title: "TorilMUD", desc: "torilmud.com:9999"},
+		item{title: "Local Echo (dev)", desc: MockAddress},
 	}
 	l := list.New(items, list.NewDefaultDelegate(), 0, 0)
 	l.Title = "Select a MUD"
