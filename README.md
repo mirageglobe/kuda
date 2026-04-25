@@ -9,10 +9,12 @@ Kuda is a modern MUD (Multi-User Dungeon) client built in Go, inspired by the Ja
 - Integrated mapping system for zone navigation.
 - Terminal-based interface (TUI).
 
-## Build
+## Quick Start
 ```bash
 make build
 ```
 
 ## Status
 Kuda is currently in the initial development phase.
+
+See [SPEC.md](SPEC.md#6-development-roadmap) for the project roadmap.
