@@ -24,7 +24,7 @@ type ClientModel struct {
 	client   Connection
 	viewport viewport.Model
 	input    textinput.Model
-	history  strings.Builder
+	history  *strings.Builder // pointer: strings.Builder must not be copied after first write
 	width    int
 	height   int
 }
@@ -41,6 +41,7 @@ func NewClientModel(client Connection) ClientModel {
 		client:   client,
 		input:    ti,
 		viewport: vp,
+		history:  &strings.Builder{},
 	}
 }
 
@@ -81,7 +82,7 @@ func (m ClientModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			cmd := m.input.Value()
 			if cmd != "" {
 				if err := m.client.Write([]byte(cmd + "\n")); err != nil {
-					fmt.Fprintf(&m.history, "\n[ ERROR: %v ]\n", err)
+					fmt.Fprintf(m.history, "\n[ ERROR: %v ]\n", err)
 					m.viewport.SetContent(m.history.String())
 					m.viewport.GotoBottom()
 				}
@@ -107,7 +108,7 @@ func (m ClientModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		cmds = append(cmds, m.waitForNetworkEvent())
 
 	case ErrorMsg:
-		fmt.Fprintf(&m.history, "\n[ ERROR: %v ]\n", msg.Err)
+		fmt.Fprintf(m.history, "\n[ ERROR: %v ]\n", msg.Err)
 		m.viewport.SetContent(m.history.String())
 		m.viewport.GotoBottom()
 		return m, tea.Quit
