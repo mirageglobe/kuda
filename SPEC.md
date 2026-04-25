@@ -110,9 +110,9 @@ kuda uses a common telnet state machine that negotiates capabilities (GMCP, MCCP
 ---
 
 ### M1 — Minimal Viable Client
-- [ ] basic TCP socket connection to a host/port.
-- [ ] raw stream display in a simple TUI.
-- [ ] basic user command input.
+- [x] basic TCP socket connection to a host/port.
+- [x] raw stream display in a simple TUI.
+- [x] basic user command input.
 
 ### M2 — Protocol Foundation
 - [x] basic Telnet negotiation (support for standard GA/ECHO).
