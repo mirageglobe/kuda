@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"time"
 )
 
 // Client represents a connection to a MUD server.
@@ -33,7 +34,7 @@ func newClientWithConn(conn net.Conn) *Client {
 
 // Connect establishes a TCP connection to the given address.
 func (c *Client) Connect(address string) error {
-	conn, err := net.Dial("tcp", address)
+	conn, err := net.DialTimeout("tcp", address, 10*time.Second)
 	if err != nil {
 		return fmt.Errorf("failed to connect to %s: %w", address, err)
 	}
