@@ -57,6 +57,17 @@ func TestClient_TelnetParsing(t *testing.T) {
 	if !gotW {
 		t.Error("did not receive 'w' text event")
 	}
+
+	// case 3: GA command
+	serverConn.Write([]byte{IAC, GA}) //nolint:errcheck
+	select {
+	case ev := <-events:
+		if ev.Type != EventTelnetCommand || ev.Data[0] != GA {
+			t.Errorf("expected GA command, got %v", ev)
+		}
+	case <-time.After(100 * time.Millisecond):
+		t.Fatal("timeout waiting for GA command")
+	}
 }
 
 func TestClient_GMCPCapture(t *testing.T) {

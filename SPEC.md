@@ -112,7 +112,7 @@ the telnet state machine replies `WONT`/`DONT` to any option it does not explici
 - [ ] basic user command input.
 
 ### M2 — Protocol Foundation
-- [ ] basic Telnet negotiation (support for standard GA/ECHO).
+- [x] basic Telnet negotiation (support for standard GA/ECHO).
 - [ ] implement MCCP (compression) for performance.
 
 ### M3 — Aardwolf & Advanced Protocols
