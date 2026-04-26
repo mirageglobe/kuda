@@ -95,7 +95,7 @@ func NewClientModel(client Connection, state engine.GameState, mapView MapView) 
 }
 
 func (m *ClientModel) viewportHeight() int {
-	h := m.height - 7 // 5 for status/input/hint + 2 for border top/bottom
+	h := m.height - 5 // border top+bottom(2) + status(1) + input(1) + hint(1)
 	if h < 1 {
 		h = 1
 	}
