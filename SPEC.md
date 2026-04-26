@@ -173,8 +173,6 @@ this triggers the workflow which:
 ---
 
 ### Near Term
-
-#### easy
 - [ ] `[network]` implement auto-reconnect with configurable backoff [easy]
 - [ ] `[ui]` add settings/connection status display (MCCP, telnet details) [easy]
 - [ ] `[engine]` add toggle for filtering Aardwolf-specific text tags (e.g., {say}, {affoff}) [easy]
@@ -185,8 +183,6 @@ this triggers the workflow which:
 - [ ] `[network]` allow aardwolf to quit game cleanly [easy]
 - [ ] complete M1 TCP connection and TUI output rendering. [easy]
 - [ ] wire up basic input loop with command history. [easy]
-
-#### medium
 - [ ] `[network]` add Aardwolf-specific GMCP module handlers (stats, room, inventory) [medium]
 - [ ] `[network]` add MSP (MUD Sound Protocol) support [medium]
 - [ ] `[engine/ui]` add support for user-defined hotkeys/aliases via Lua [medium]
@@ -200,11 +196,7 @@ this triggers the workflow which:
 - [ ] `[ui]` add theming support and theme switcher [medium]
 - [ ] `[engine/ui]` add toggle for showing and editing lua based aliases [medium]
 - [ ] establish project structure for engine, network, ui, and mapper packages. [medium]
-
-#### hard
 - [ ] `[network/engine/ui]` implement virtual scrollback buffer for performance [hard]
-
-#### complete
 - [x] `[ui]` toggle raw mode — print all received bytes unprocessed for debugging [easy]
 - [x] `[mapper]` persist room graph to disk with periodic auto-save and load on startup [easy]
 - [x] `[ui]` have a help menu hotkey "?" [easy]
