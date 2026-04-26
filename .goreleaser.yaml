@@ -1,0 +1,61 @@
+version: 2
+
+project_name: kuda
+
+before:
+  hooks:
+    - go mod tidy
+    - go fmt ./...
+
+builds:
+  - id: kuda
+    main: ./main.go
+    binary: kuda
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w
+      - -X main.version={{.Version}}
+      - -X main.buildTime={{.Date}}
+
+archives:
+  - id: kuda
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    format: tar.gz
+    files:
+      - README.md
+      - SPEC.md
+
+checksum:
+  name_template: "checksums.txt"
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^chore:"
+      - "^docs:"
+      - "^test:"
+      - Merge pull request
+      - Merge branch
+
+brews:
+  - name: kuda
+    repository:
+      owner: mirageglobe
+      name: homebrew-tap
+      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
+    directory: Formula
+    homepage: https://github.com/mirageglobe/kuda
+    description: a modern MUD client built in Go, optimized for Aardwolf
+    license: MIT
+    install: |
+      bin.install "kuda"
+    test: |
+      system "#{bin}/kuda", "--version"

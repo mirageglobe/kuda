@@ -143,7 +143,7 @@ kuda uses a common telnet state machine that negotiates capabilities (GMCP, MCCP
 - [ ] `[network]` implement auto-reconnect with configurable backoff [easy]
 - [ ] `[network]` add Aardwolf-specific GMCP module handlers (stats, room, inventory) [medium]
 - [ ] `[network]` add MSP (MUD Sound Protocol) support [medium]
-- [ ] `[build]` setup GoReleaser for automated versioning and Homebrew deployment [medium]
+- [x] `[build]` setup GoReleaser for automated versioning and Homebrew deployment [medium]
 - [ ] `[engine/ui]` add support for user-defined hotkeys/aliases via Lua [medium]
 - [ ] `[ui]` implement layered input manager to handle keybinding/command conflicts [medium]
 - [ ] `[ui]` add search feature to scrollback buffer [medium]
