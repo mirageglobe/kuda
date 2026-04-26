@@ -53,7 +53,7 @@ type ErrorMsg struct {
 
 const mapPanelWidth = 35 // inner width of the right-side map panel
 
-var statusHint = hintStyle.Render("[ esc: launcher  ctrl+l: lua  ctrl+p: map  ctrl+r: raw  ctrl+c: quit ]")
+var statusHint = hintStyle.Render("[ ?: help  esc: launcher  ctrl+l: lua  ctrl+p: map  ctrl+r: raw  ctrl+c: quit ]")
 
 // ClientModel is the main connected-session view.
 type ClientModel struct {
@@ -61,6 +61,7 @@ type ClientModel struct {
 	engine   engine.GameState
 	mapView    MapView
 	showMap    bool
+	showHelp   bool
 	rawMode    bool
 	viewport   viewport.Model
 	input      textinput.Model
@@ -167,6 +168,11 @@ func (m ClientModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case tea.KeyCtrlR:
 			m.rawMode = !m.rawMode
 			return m, nil
+		case tea.KeyRunes:
+			if msg.String() == "?" && m.input.Value() == "" {
+				m.showHelp = !m.showHelp
+				return m, nil
+			}
 		case tea.KeyUp:
 			if len(m.cmdHistory) == 0 {
 				return m, nil
@@ -254,8 +260,35 @@ func (m ClientModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, tea.Batch(cmds...)
 }
 
+func (m ClientModel) helpView() string {
+	w := m.viewportInnerWidth()
+	sep := strings.Repeat("─", w-2)
+	lines := []string{
+		"",
+		"  keybindings",
+		"  " + sep,
+		"  ?          show / hide this help",
+		"  up / down  command history",
+		"  ctrl+l     toggle lua scripting",
+		"  ctrl+p     toggle map panel",
+		"  ctrl+r     toggle raw mode (debug)",
+		"  esc        return to server list",
+		"  ctrl+c     quit",
+	}
+	h := m.viewportHeight()
+	for len(lines) < h {
+		lines = append(lines, "")
+	}
+	return strings.Join(lines[:h], "\n")
+}
+
 func (m ClientModel) View() string {
-	content := viewportBorderStyle.Render(m.viewport.View())
+	var pane string
+	if m.showHelp {
+		pane = viewportBorderStyle.Render(m.helpView())
+	} else {
+		pane = viewportBorderStyle.Render(m.viewport.View())
+	}
 
 	// Render Status Bar
 	v := m.engine.Vitals()
@@ -275,7 +308,7 @@ func (m ClientModel) View() string {
 
 	if m.showMap && m.mapView != nil {
 		mapRendered := viewportBorderStyle.Render(m.mapView.Render(mapPanelWidth, m.viewportHeight()))
-		content = lipgloss.JoinHorizontal(lipgloss.Top, content, mapRendered)
+		pane = lipgloss.JoinHorizontal(lipgloss.Top, pane, mapRendered)
 	}
-	return fmt.Sprintf("%s\n%s\n%s\n%s", content, statusBar, m.input.View(), statusHint)
+	return fmt.Sprintf("%s\n%s\n%s\n%s", pane, statusBar, m.input.View(), statusHint)
 }
