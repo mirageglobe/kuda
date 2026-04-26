@@ -10,7 +10,6 @@ type Server struct {
 // GetServers returns the default list of MUD servers.
 func GetServers() []Server {
 	return []Server{
-		{Name: "Aardwolf (Secure)", Address: "tls://aardmud.org:443", Desc: "encrypted connection (TLS)"},
 		{Name: "Aardwolf", Address: "aardmud.org:23", Desc: "standard connection"},
 		{Name: "TorilMUD", Address: "torilmud.com:9999", Desc: "forgotten realms mud"},
 		// ...

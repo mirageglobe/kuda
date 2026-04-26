@@ -126,7 +126,7 @@ kuda uses a common telnet state machine that negotiates capabilities (GMCP, MCCP
 ### M2 — Protocol Foundation
 - [x] basic Telnet negotiation (support for standard GA/ECHO).
 - [x] implement MCCP (compression) for performance.
-- [x] TLS support for secure connections.
+- [x] TLS support for secure connections (generic MUDs via `tls://` prefix; Aardwolf does not offer TLS).
 
 ### M3 — Aardwolf & Advanced Protocols
 - [x] GMCP parsing and state management.
@@ -138,6 +138,7 @@ kuda uses a common telnet state machine that negotiates capabilities (GMCP, MCCP
 ---
 
 ### Near Term
+- [ ] `[ui]` toggle raw mode — print all received bytes unprocessed for debugging [easy]
 - [x] `[mapper]` persist room graph to disk with periodic auto-save and load on startup [easy]
 - [ ] `[network]` implement auto-reconnect with configurable backoff [easy]
 - [ ] `[network]` add Aardwolf-specific GMCP module handlers (stats, room, inventory) [medium]

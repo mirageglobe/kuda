@@ -85,7 +85,8 @@ func (e *Engine) handleGMCP(data []byte) {
 			}
 			room := RoomInfo{Vnum: vnum, Name: r.Name}
 			if r.Coords != nil {
-				room.X, room.Y, room.Z = r.Coords.X, r.Coords.Y, r.Coords.Z
+				// Aardwolf coords.x is the north-south axis; swap so our X=EW, Y=NS.
+				room.X, room.Y, room.Z = r.Coords.Y, r.Coords.X, r.Coords.Z
 				room.HasCoords = true
 			}
 			e.state.room = room
