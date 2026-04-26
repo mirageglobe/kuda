@@ -12,6 +12,32 @@ import (
 	"github.com/muesli/reflow/wordwrap"
 )
 
+// formatRawEvent renders a network event as a tagged escaped-byte string for raw mode.
+func formatRawEvent(ev Event) string {
+	var tag string
+	switch ev.Type {
+	case EventText:
+		tag = "[TEXT  ]"
+	case EventGMCP:
+		tag = "[GMCP  ]"
+	case EventTelnetCommand:
+		tag = "[TELNET]"
+	default:
+		tag = "[OTHER ]"
+	}
+	var sb strings.Builder
+	sb.WriteString(tag)
+	sb.WriteByte(' ')
+	for _, b := range ev.Data {
+		if b >= 0x20 && b < 0x7f {
+			sb.WriteByte(b)
+		} else {
+			fmt.Fprintf(&sb, "\\x%02x", b)
+		}
+	}
+	return sb.String()
+}
+
 // ReturnToLauncherMsg signals that the user wants to return to the server list.
 type ReturnToLauncherMsg struct{}
 
@@ -27,7 +53,7 @@ type ErrorMsg struct {
 
 const mapPanelWidth = 35 // inner width of the right-side map panel
 
-var statusHint = hintStyle.Render("[ esc: server list  ctrl+l: toggle lua  ctrl+p: toggle map  ctrl+c: quit ]")
+var statusHint = hintStyle.Render("[ esc: launcher  ctrl+l: lua  ctrl+p: map  ctrl+r: raw  ctrl+c: quit ]")
 
 // ClientModel is the main connected-session view.
 type ClientModel struct {
@@ -35,6 +61,7 @@ type ClientModel struct {
 	engine   engine.GameState
 	mapView  MapView
 	showMap  bool
+	rawMode  bool
 	viewport viewport.Model
 	input    textinput.Model
 	history  *strings.Builder // raw history with ANSI codes
@@ -133,6 +160,9 @@ func (m ClientModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.viewport.Height = m.viewportHeight()
 			m.refreshViewport()
 			return m, nil
+		case tea.KeyCtrlR:
+			m.rawMode = !m.rawMode
+			return m, nil
 		case tea.KeyEsc:
 			return m, func() tea.Msg { return ReturnToLauncherMsg{} }
 		case tea.KeyEnter:
@@ -154,30 +184,29 @@ func (m ClientModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.refreshViewport()
 
 	case NetworkEventMsg:
-		switch msg.Event.Type {
-		case EventText:
-			text := string(msg.Event.Data)
+		// Telnet echo handling applies regardless of raw mode.
+		if msg.Event.Type == EventTelnetCommand && len(msg.Event.Data) >= 2 {
+			cmd, opt := msg.Event.Data[0], msg.Event.Data[1]
+			if opt == TelnetOptEcho {
+				if cmd == TelnetCmdWILL {
+					m.input.EchoMode = textinput.EchoPassword
+				} else if cmd == TelnetCmdWONT {
+					m.input.EchoMode = textinput.EchoNormal
+				}
+			}
+		}
+		if m.rawMode {
+			fmt.Fprintf(m.history, "%s\n", formatRawEvent(msg.Event))
+		} else if msg.Event.Type == EventText {
 			// Most MUDs send \r\n for newlines. Some send \r\x00 for prompts.
 			// By stripping \r and \x00 entirely, we preserve only the \n
 			// which prevents the "double spacing" gap issue caused by
 			// treating \r as a separate newline.
-			text = strings.ReplaceAll(text, "\r", "")
+			text := strings.ReplaceAll(string(msg.Event.Data), "\r", "")
 			text = strings.ReplaceAll(text, "\x00", "")
 			m.history.WriteString(text)
-			m.refreshViewport()
-		case EventTelnetCommand:
-			if len(msg.Event.Data) >= 2 {
-				cmd := msg.Event.Data[0]
-				opt := msg.Event.Data[1]
-				if opt == TelnetOptEcho {
-					if cmd == TelnetCmdWILL {
-						m.input.EchoMode = textinput.EchoPassword
-					} else if cmd == TelnetCmdWONT {
-						m.input.EchoMode = textinput.EchoNormal
-					}
-				}
-			}
 		}
+		m.refreshViewport()
 		cmds = append(cmds, m.waitForNetworkEvent())
 
 	case ErrorMsg:
