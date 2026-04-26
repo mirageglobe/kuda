@@ -173,37 +173,45 @@ this triggers the workflow which:
 ---
 
 ### Near Term
-- [x] `[ui]` toggle raw mode — print all received bytes unprocessed for debugging [easy]
-- [x] `[mapper]` persist room graph to disk with periodic auto-save and load on startup [easy]
+
+#### easy
 - [ ] `[network]` implement auto-reconnect with configurable backoff [easy]
-- [ ] `[network]` add Aardwolf-specific GMCP module handlers (stats, room, inventory) [medium]
-- [ ] `[network]` add MSP (MUD Sound Protocol) support [medium]
-- [x] `[build]` setup GoReleaser for automated versioning and Homebrew deployment [medium]
-- [ ] `[engine/ui]` add support for user-defined hotkeys/aliases via Lua [medium]
-- [ ] `[ui]` implement layered input manager to handle keybinding/command conflicts [medium]
-- [ ] `[ui]` add search feature to scrollback buffer [medium]
-- [ ] `[network/engine/ui]` implement virtual scrollback buffer for performance [hard]
-- [ ] `[engine/ui]` implement regex-based line diversion (combat/spells/chat) [medium]
-- [ ] `[engine/ui]` add event-driven spell/buff dashboard [medium]
-- [ ] `[network/engine]` improve speedwalks and speedrun capabilities [medium]
 - [ ] `[ui]` add settings/connection status display (MCCP, telnet details) [easy]
 - [ ] `[engine]` add toggle for filtering Aardwolf-specific text tags (e.g., {say}, {affoff}) [easy]
-- [ ] `[ui]` investigate dedicated UI panels for GMCP-backed chat and equipment [medium]
-- [ ] `[ui]` add Aardwolf in-game time and date ticker to top bar [medium]
 - [ ] `[ui]` add system info (date, time, CPU/memory) to top bar [easy]
 - [ ] `[ui]` add top bar with version, project name, and GitHub link [easy]
-- [ ] `[ui]` add theming support and theme switcher [medium]
 - [ ] `[ui]` improve UI with icons and visual symbols [easy]
-- [ ] `[engine/ui]` add toggle for showing and editing lua based aliases [medium]
-- [x] `[ui]` toggle map mode (new screen or overlay) [medium]
 - [ ] `[ui]` allow quitting mud session to return to the main screen [easy]
-- [x] `[ui]` improve display with border panes [medium]
-- [x] `[ui]` have a help menu hotkey "?" [easy]
-- [x] `[ui]` navigation up and down should go back in history of commands [easy]
 - [ ] `[network]` allow aardwolf to quit game cleanly [easy]
 - [ ] complete M1 TCP connection and TUI output rendering. [easy]
 - [ ] wire up basic input loop with command history. [easy]
+
+#### medium
+- [ ] `[network]` add Aardwolf-specific GMCP module handlers (stats, room, inventory) [medium]
+- [ ] `[network]` add MSP (MUD Sound Protocol) support [medium]
+- [ ] `[engine/ui]` add support for user-defined hotkeys/aliases via Lua [medium]
+- [ ] `[ui]` implement layered input manager to handle keybinding/command conflicts [medium]
+- [ ] `[ui]` add search feature to scrollback buffer [medium]
+- [ ] `[engine/ui]` implement regex-based line diversion (combat/spells/chat) [medium]
+- [ ] `[engine/ui]` add event-driven spell/buff dashboard [medium]
+- [ ] `[network/engine]` improve speedwalks and speedrun capabilities [medium]
+- [ ] `[ui]` investigate dedicated UI panels for GMCP-backed chat and equipment [medium]
+- [ ] `[ui]` add Aardwolf in-game time and date ticker to top bar [medium]
+- [ ] `[ui]` add theming support and theme switcher [medium]
+- [ ] `[engine/ui]` add toggle for showing and editing lua based aliases [medium]
 - [ ] establish project structure for engine, network, ui, and mapper packages. [medium]
+
+#### hard
+- [ ] `[network/engine/ui]` implement virtual scrollback buffer for performance [hard]
+
+#### complete
+- [x] `[ui]` toggle raw mode — print all received bytes unprocessed for debugging [easy]
+- [x] `[mapper]` persist room graph to disk with periodic auto-save and load on startup [easy]
+- [x] `[ui]` have a help menu hotkey "?" [easy]
+- [x] `[ui]` navigation up and down should go back in history of commands [easy]
+- [x] `[build]` setup GoReleaser for automated versioning and Homebrew deployment [medium]
+- [x] `[ui]` toggle map mode (new screen or overlay) [medium]
+- [x] `[ui]` improve display with border panes [medium]
 
 ### Ideas
 - split-pane layout (main output + status/map panel).
