@@ -29,7 +29,7 @@ func connStatusStr(cs ConnStatusInfo) string {
 	if len(parts) == 0 {
 		return ""
 	}
-	return " | " + strings.Join(parts, " ")
+	return " │ " + strings.Join(parts, " ")
 }
 
 // formatRawEvent renders a network event as a tagged escaped-byte string for raw mode.
@@ -73,7 +73,7 @@ type ErrorMsg struct {
 
 const mapPanelWidth = 35 // inner width of the right-side map panel
 
-var statusHint = hintStyle.Render("[ ?: help  esc: launcher  ctrl+l: lua  ctrl+p: map  ctrl+r: raw  ctrl+c: quit ]")
+var statusHint = hintStyle.Render("[ ?: help · esc: back · ^l: lua · ^p: map · ^r: raw · ^c: quit ]")
 
 // sysTick is the message fired by the 1-second system info ticker.
 type sysTick struct{}
@@ -340,7 +340,7 @@ func (m ClientModel) View() string {
 
 	cs := m.client.ConnStatus()
 	connInfo := connStatusStr(cs)
-	statusBar := fmt.Sprintf(" %s | HP %d/%d | MN %d/%d | MV %d/%d | %s%s",
+	statusBar := fmt.Sprintf(" %s │ ♥ %d/%d │ ◆ %d/%d │ ↑ %d/%d │ %s%s",
 		logoStyle.Render(name),
 		v.HP, v.MaxHP,
 		v.Mana, v.MaxMana,
@@ -355,7 +355,7 @@ func (m ClientModel) View() string {
 		hintStyle.Render("v"+AppVersion),
 		hintStyle.Render("github.com/mirageglobe/kuda"),
 	)
-	topRight := hintStyle.Render(fmt.Sprintf("%s  %s  mem %d MB ",
+	topRight := hintStyle.Render(fmt.Sprintf("%s │ %s │ mem %d MB ",
 		now.Format("2006-01-02"),
 		now.Format("15:04:05"),
 		m.memMB,
