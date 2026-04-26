@@ -16,12 +16,20 @@ type Event struct {
 	Data []byte
 }
 
+// ConnStatusInfo holds negotiated protocol state for display purposes.
+type ConnStatusInfo struct {
+	MCCPActive bool
+	GMCPActive bool
+	EchoActive bool
+}
+
 // Connection is the subset of the network client that ui requires.
 // Depend on this interface, not *network.Client directly.
 type Connection interface {
 	Write(data []byte) error
 	EventsCh() <-chan Event
 	ErrorsCh() <-chan error
+	ConnStatus() ConnStatusInfo
 }
 
 // MapView is the rendering interface for the mapper.

@@ -109,6 +109,7 @@ func (p *telnetParser) handleNegotiation(cmd, option byte) {
 	case WILL:
 		if option == TelnetOptionEcho {
 			p.client.Write([]byte{IAC, DO, option}) //nolint:errcheck
+			p.client.echoActive.Store(true)
 			p.client.events <- Event{Type: EventTelnetCommand, Data: []byte{cmd, option}}
 			return
 		}
@@ -118,6 +119,7 @@ func (p *telnetParser) handleNegotiation(cmd, option byte) {
 		}
 		if option == TelnetOptionGMCP {
 			p.client.Write([]byte{IAC, DO, option}) //nolint:errcheck
+			p.client.gmcpActive.Store(true)
 			// Initial handshake
 			p.client.Write([]byte{IAC, SB, TelnetOptionGMCP})
 			p.client.Write([]byte(`Core.Hello {"client": "kuda", "version": "0.1.0"}`))
@@ -132,6 +134,7 @@ func (p *telnetParser) handleNegotiation(cmd, option byte) {
 	case WONT:
 		if option == TelnetOptionEcho {
 			p.client.Write([]byte{IAC, DONT, option}) //nolint:errcheck
+			p.client.echoActive.Store(false)
 			p.client.events <- Event{Type: EventTelnetCommand, Data: []byte{cmd, option}}
 			return
 		}
@@ -155,6 +158,7 @@ func (p *telnetParser) handleSubnegotiation(data []byte) {
 	case TelnetOptionMCCP:
 		p.flushText()
 		p.client.pendingMCCP = true
+		p.client.mccpActive.Store(true)
 	case TelnetOptionTTYPE:
 		if len(data) > 1 && data[1] == 1 { // SEND
 			// reply with IS KUDA

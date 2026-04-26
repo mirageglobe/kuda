@@ -12,6 +12,24 @@ import (
 	"github.com/muesli/reflow/wordwrap"
 )
 
+// connStatusStr returns a compact status string for active telnet protocol features.
+func connStatusStr(cs ConnStatusInfo) string {
+	var parts []string
+	if cs.GMCPActive {
+		parts = append(parts, "GMCP")
+	}
+	if cs.MCCPActive {
+		parts = append(parts, "MCCP")
+	}
+	if cs.EchoActive {
+		parts = append(parts, "ECHO")
+	}
+	if len(parts) == 0 {
+		return ""
+	}
+	return " | " + strings.Join(parts, " ")
+}
+
 // formatRawEvent renders a network event as a tagged escaped-byte string for raw mode.
 func formatRawEvent(ev Event) string {
 	var tag string
@@ -299,12 +317,15 @@ func (m ClientModel) View() string {
 		name = "Connecting..."
 	}
 
-	statusBar := fmt.Sprintf(" %s | HP %d/%d | MN %d/%d | MV %d/%d | %s",
+	cs := m.client.ConnStatus()
+	connInfo := connStatusStr(cs)
+	statusBar := fmt.Sprintf(" %s | HP %d/%d | MN %d/%d | MV %d/%d | %s%s",
 		logoStyle.Render(name),
 		v.HP, v.MaxHP,
 		v.Mana, v.MaxMana,
 		v.Move, v.MaxMove,
 		subtitleStyle.Render(room.Name),
+		hintStyle.Render(connInfo),
 	)
 
 	if m.showMap && m.mapView != nil {

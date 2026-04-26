@@ -137,6 +137,13 @@ func (a *clientAdapter) forward() {
 func (a *clientAdapter) Write(data []byte) error   { return a.client.Write(data) }
 func (a *clientAdapter) EventsCh() <-chan ui.Event { return a.events }
 func (a *clientAdapter) ErrorsCh() <-chan error    { return a.client.ErrorsCh() }
+func (a *clientAdapter) ConnStatus() ui.ConnStatusInfo {
+	return ui.ConnStatusInfo{
+		MCCPActive: a.client.IsMCCPActive(),
+		GMCPActive: a.client.IsGMCPActive(),
+		EchoActive: a.client.IsEchoActive(),
+	}
+}
 
 func mapToUIEvent(ev network.Event) ui.Event {
 	var t ui.EventType
@@ -230,8 +237,9 @@ func (m *mockConnection) Write(data []byte) error {
 	return nil
 }
 
-func (m *mockConnection) EventsCh() <-chan ui.Event { return m.events }
-func (m *mockConnection) ErrorsCh() <-chan error    { return m.errors }
+func (m *mockConnection) EventsCh() <-chan ui.Event     { return m.events }
+func (m *mockConnection) ErrorsCh() <-chan error        { return m.errors }
+func (m *mockConnection) ConnStatus() ui.ConnStatusInfo { return ui.ConnStatusInfo{} }
 
 // watchRooms forwards room change events from an engine to the mapper.
 // It exits when the engine's RoomCh is closed (on disconnect) and saves.
