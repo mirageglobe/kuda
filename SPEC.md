@@ -139,7 +139,7 @@ this triggers the workflow which:
 
 ---
 
-## 7. Development Roadmap
+## 7. Roadmap
 
 ### Milestones
 
@@ -175,11 +175,10 @@ this triggers the workflow which:
 ### Near Term
 - [x] `[network]` implement auto-reconnect with configurable backoff [easy]
 - [x] `[ui]` add settings/connection status display (MCCP, telnet details) [easy]
-- [ ] `[engine]` add toggle for filtering Aardwolf-specific text tags (e.g., {say}, {affoff}) [easy]
 - [ ] `[ui]` add system info (date, time, CPU/memory) to top bar [easy]
 - [ ] `[ui]` add top bar with version, project name, and GitHub link [easy]
 - [ ] `[ui]` improve UI with icons and visual symbols [easy]
-- [ ] `[ui]` allow quitting mud session to return to the main screen [easy]
+- [x] `[ui]` allow quitting mud session to return to the main screen [easy]
 - [ ] `[network]` allow aardwolf to quit game cleanly [easy]
 - [ ] complete M1 TCP connection and TUI output rendering. [easy]
 - [ ] wire up basic input loop with command history. [easy]
@@ -196,7 +195,8 @@ this triggers the workflow which:
 - [ ] `[ui]` add theming support and theme switcher [medium]
 - [ ] `[engine/ui]` add toggle for showing and editing lua based aliases [medium]
 - [ ] establish project structure for engine, network, ui, and mapper packages. [medium]
-- [ ] `[network/engine/ui]` implement virtual scrollback buffer for performance [hard]
+- [ ] `[network/engine/ui]` implement virtual scrollback buffer for performance. toggle for search and scrollback [hard]
+- [ ] `[engine]` add toggle for filtering Aardwolf-specific text tags (e.g., {say}, {affoff}) [easy]
 - [x] `[ui]` toggle raw mode — print all received bytes unprocessed for debugging [easy]
 - [x] `[mapper]` persist room graph to disk with periodic auto-save and load on startup [easy]
 - [x] `[ui]` have a help menu hotkey "?" [easy]

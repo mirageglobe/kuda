@@ -30,6 +30,7 @@ type Connection interface {
 	EventsCh() <-chan Event
 	ErrorsCh() <-chan error
 	ConnStatus() ConnStatusInfo
+	Close() error
 }
 
 // MapView is the rendering interface for the mapper.
