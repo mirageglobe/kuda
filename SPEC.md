@@ -177,7 +177,7 @@ this triggers the workflow which:
 - [x] `[ui]` add settings/connection status display (MCCP, telnet details) [easy]
 - [x] `[ui]` add system info (date, time, CPU/memory) to top bar [easy]
 - [x] `[ui]` add top bar with version, project name, and GitHub link [easy]
-- [ ] `[ui]` improve UI with icons and visual symbols [easy]
+- [x] `[ui]` improve UI with icons and visual symbols [easy]
 - [x] `[ui]` allow quitting mud session to return to the main screen [easy]
 - [x] `[network]` allow aardwolf to quit game cleanly [easy]
 - [ ] complete M1 TCP connection and TUI output rendering. [easy]
