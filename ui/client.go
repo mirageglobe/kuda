@@ -113,7 +113,7 @@ func NewClientModel(client Connection, state engine.GameState, mapView MapView) 
 }
 
 func (m *ClientModel) viewportHeight() int {
-	h := m.height - 5 // border top+bottom(2) + status(1) + input(1) + hint(1)
+	h := m.height - 6 // topbar(1) + border top+bottom(2) + status(1) + input(1) + hint(1)
 	if h < 1 {
 		h = 1
 	}
@@ -332,9 +332,15 @@ func (m ClientModel) View() string {
 		hintStyle.Render(connInfo),
 	)
 
+	topBar := fmt.Sprintf(" %s %s  %s",
+		logoStyle.Render("kuda"),
+		hintStyle.Render("v"+AppVersion),
+		hintStyle.Render("github.com/mirageglobe/kuda"),
+	)
+
 	if m.showMap && m.mapView != nil {
 		mapRendered := viewportBorderStyle.Render(m.mapView.Render(mapPanelWidth, m.viewportHeight()))
 		pane = lipgloss.JoinHorizontal(lipgloss.Top, pane, mapRendered)
 	}
-	return fmt.Sprintf("%s\n%s\n%s\n%s", pane, statusBar, m.input.View(), statusHint)
+	return fmt.Sprintf("%s\n%s\n%s\n%s\n%s", topBar, pane, statusBar, m.input.View(), statusHint)
 }

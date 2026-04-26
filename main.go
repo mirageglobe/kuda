@@ -278,6 +278,7 @@ func mapSavePath() string {
 // ── entry point ──────────────────────────────────────────────────────────────
 
 func main() {
+	ui.AppVersion = version
 	model := rootModel{
 		current: ui.NewSplashModel(),
 		mapper:  mapper.Load(mapSavePath()),
