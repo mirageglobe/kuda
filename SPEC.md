@@ -104,7 +104,42 @@ kuda uses a common telnet state machine that negotiates capabilities (GMCP, MCCP
 
 ---
 
-## 6. Development Roadmap
+## 6. Build & Release
+
+### local development
+
+```bash
+make build       # compile binary to bin/kuda
+make test        # run tests and linter
+make run         # build and launch
+make release     # local snapshot build via goreleaser (requires: brew install goreleaser)
+```
+
+### publishing a release
+
+releases are automated via goreleaser and GitHub Actions (`.github/workflows/release.yml`). the workflow triggers on any `v*` tag push.
+
+**one-time setup — before first release:**
+
+1. create the homebrew tap repository at `github.com/mirageglobe/homebrew-tap` with a `Formula/` directory.
+2. generate a GitHub PAT with `repo` write scope for the tap repo.
+3. add the PAT as a repository secret named `HOMEBREW_TAP_GITHUB_TOKEN` in the kuda repo settings (Settings → Secrets → Actions).
+
+**releasing a new version:**
+
+```bash
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+this triggers the workflow which:
+- cross-compiles for `linux/amd64`, `linux/arm64`, `darwin/amd64`, `darwin/arm64`
+- creates a GitHub release with archives and `checksums.txt`
+- opens a PR against `mirageglobe/homebrew-tap` to update the formula
+
+---
+
+## 7. Development Roadmap
 
 ### Milestones
 
