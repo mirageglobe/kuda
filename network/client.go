@@ -34,6 +34,7 @@ type Client struct {
 	events      chan Event
 	errors      chan error
 	pendingMCCP bool
+	stopped     atomic.Bool
 	mccpActive  atomic.Bool
 	gmcpActive  atomic.Bool
 	echoActive  atomic.Bool
@@ -78,8 +79,9 @@ func (c *Client) Connect(address string) error {
 	return nil
 }
 
-// Close shuts down the connection.
+// Close shuts down the connection and prevents auto-reconnect.
 func (c *Client) Close() error {
+	c.stopped.Store(true)
 	if c.conn != nil {
 		return c.conn.Close()
 	}
@@ -132,7 +134,7 @@ func (c *Client) listen() {
 			c.errors <- err
 		}
 
-		if c.retry.MaxAttempts == 0 {
+		if c.retry.MaxAttempts == 0 || c.stopped.Load() {
 			break
 		}
 

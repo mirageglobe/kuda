@@ -22,6 +22,7 @@ var (
 // It is the only place allowed to import both ui and network.
 type rootModel struct {
 	current       tea.Model
+	conn          ui.Connection
 	engine        *engine.Engine
 	mapper        *mapper.Mapper
 	width, height int
@@ -42,7 +43,10 @@ func (m rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		})
 
 	case ui.ReturnToLauncherMsg:
-		// When returning to launcher, we should probably kill the engine/client
+		if m.conn != nil {
+			_ = m.conn.Close()
+			m.conn = nil
+		}
 		m.engine = nil
 		next := ui.NewLaunchModel()
 		m.current = next
@@ -53,6 +57,7 @@ func (m rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case ui.ServerSelectedMsg:
 		if msg.Address == ui.MockAddress {
 			conn := newMockConnection()
+			m.conn = conn
 			m.engine = engine.NewEngine(newEngineAdapter(conn))
 			go watchRooms(m.engine, m.mapper)
 			next := ui.NewClientModel(conn, m.engine, m.mapper)
@@ -70,6 +75,7 @@ func (m rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.current, cmd = m.current.Update(ui.ConnectErrorMsg{Err: msg.err})
 			return m, cmd
 		}
+		m.conn = msg.adapter
 		m.engine = engine.NewEngine(newEngineAdapter(msg.adapter))
 		go watchRooms(m.engine, m.mapper)
 		next := ui.NewClientModel(msg.adapter, m.engine, m.mapper)
@@ -137,6 +143,7 @@ func (a *clientAdapter) forward() {
 func (a *clientAdapter) Write(data []byte) error   { return a.client.Write(data) }
 func (a *clientAdapter) EventsCh() <-chan ui.Event { return a.events }
 func (a *clientAdapter) ErrorsCh() <-chan error    { return a.client.ErrorsCh() }
+func (a *clientAdapter) Close() error              { return a.client.Close() }
 func (a *clientAdapter) ConnStatus() ui.ConnStatusInfo {
 	return ui.ConnStatusInfo{
 		MCCPActive: a.client.IsMCCPActive(),
@@ -239,6 +246,7 @@ func (m *mockConnection) Write(data []byte) error {
 
 func (m *mockConnection) EventsCh() <-chan ui.Event     { return m.events }
 func (m *mockConnection) ErrorsCh() <-chan error        { return m.errors }
+func (m *mockConnection) Close() error                  { return nil }
 func (m *mockConnection) ConnStatus() ui.ConnStatusInfo { return ui.ConnStatusInfo{} }
 
 // watchRooms forwards room change events from an engine to the mapper.
