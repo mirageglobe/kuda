@@ -75,6 +75,7 @@ type ClientModel struct {
 
 func NewClientModel(client Connection, state engine.GameState, mapView MapView) ClientModel {
 	ti := textinput.New()
+	ti.Prompt = "kuda > "
 	ti.Placeholder = "type a command..."
 	ti.Focus()
 
