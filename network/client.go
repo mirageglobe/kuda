@@ -6,10 +6,26 @@ import (
 	"crypto/tls"
 	"fmt"
 	"io"
+	"math"
 	"net"
 	"strings"
 	"time"
 )
+
+// RetryConfig controls reconnect behaviour after a dropped connection.
+// Set MaxAttempts to 0 to disable auto-reconnect.
+type RetryConfig struct {
+	MaxAttempts  int
+	InitialDelay time.Duration
+	MaxDelay     time.Duration
+}
+
+// DefaultRetry is a sensible reconnect policy for interactive MUD sessions.
+var DefaultRetry = RetryConfig{
+	MaxAttempts:  5,
+	InitialDelay: 2 * time.Second,
+	MaxDelay:     30 * time.Second,
+}
 
 // Client represents a connection to a MUD server.
 type Client struct {
@@ -17,13 +33,16 @@ type Client struct {
 	events      chan Event
 	errors      chan error
 	pendingMCCP bool
+	address     string
+	retry       RetryConfig
 }
 
-// NewClient creates a new network client.
+// NewClient creates a new network client with default retry settings.
 func NewClient() *Client {
 	return &Client{
 		events: make(chan Event, 1024),
 		errors: make(chan error, 10),
+		retry:  DefaultRetry,
 	}
 }
 
@@ -31,32 +50,17 @@ func NewClient() *Client {
 func newClientWithConn(conn net.Conn) *Client {
 	c := NewClient()
 	c.conn = conn
+	c.retry = RetryConfig{} // disable retry for injected test connections
 	return c
 }
 
-// Connect establishes a TCP connection to the given address.
+// Connect establishes a TCP connection to the given address and starts the read loop.
 // Supports unencrypted connections and TLS if address starts with "tls://".
 func (c *Client) Connect(address string) error {
-	dialer := &net.Dialer{Timeout: 10 * time.Second}
-
-	var conn net.Conn
-	var err error
-
-	if strings.HasPrefix(address, "tls://") {
-		cleanAddr := strings.TrimPrefix(address, "tls://")
-		// MUD TLS often uses self-signed or older certs; we try strict first
-		// but might need InsecureSkipVerify: true if users have issues.
-		conn, err = tls.DialWithDialer(dialer, "tcp", cleanAddr, &tls.Config{
-			InsecureSkipVerify: true, // Common for MUDs with self-signed certs
-		})
-	} else {
-		conn, err = dialer.Dial("tcp", address)
+	c.address = address
+	if err := c.dial(); err != nil {
+		return err
 	}
-
-	if err != nil {
-		return fmt.Errorf("failed to connect to %s: %w", address, err)
-	}
-	c.conn = conn
 	go c.listen()
 	return nil
 }
@@ -69,23 +73,93 @@ func (c *Client) Close() error {
 	return nil
 }
 
-// listen reads from the connection and feeds the telnet parser.
+// dial opens (or reopens) the underlying TCP or TLS connection.
+func (c *Client) dial() error {
+	dialer := &net.Dialer{Timeout: 10 * time.Second}
+	var (
+		conn net.Conn
+		err  error
+	)
+	if strings.HasPrefix(c.address, "tls://") {
+		cleanAddr := strings.TrimPrefix(c.address, "tls://")
+		conn, err = tls.DialWithDialer(dialer, "tcp", cleanAddr, &tls.Config{
+			InsecureSkipVerify: true, // MUDs commonly use self-signed certs
+		})
+	} else {
+		conn, err = dialer.Dial("tcp", c.address)
+	}
+	if err != nil {
+		return fmt.Errorf("failed to connect to %s: %w", c.address, err)
+	}
+	c.conn = conn
+	return nil
+}
+
+// sendText injects a local status line into the events channel without blocking.
+func (c *Client) sendText(text string) {
+	select {
+	case c.events <- Event{Type: EventText, Data: []byte(text)}:
+	default:
+	}
+}
+
+// backoffDelay returns the exponential backoff delay for a given attempt index (0-based).
+func (c *Client) backoffDelay(attempt int) time.Duration {
+	d := float64(c.retry.InitialDelay) * math.Pow(2, float64(attempt))
+	if d > float64(c.retry.MaxDelay) {
+		d = float64(c.retry.MaxDelay)
+	}
+	return time.Duration(d)
+}
+
+// listen runs the read loop and attempts reconnection on disconnect per retry config.
 func (c *Client) listen() {
+	for {
+		if err := c.readLoop(); err != nil {
+			c.errors <- err
+		}
+
+		if c.retry.MaxAttempts == 0 {
+			break
+		}
+
+		reconnected := false
+		for attempt := 1; attempt <= c.retry.MaxAttempts; attempt++ {
+			delay := c.backoffDelay(attempt - 1)
+			c.sendText(fmt.Sprintf("\r\n[ connection lost — reconnecting in %v (attempt %d/%d) ]\r\n",
+				delay, attempt, c.retry.MaxAttempts))
+			time.Sleep(delay)
+			if err := c.dial(); err != nil {
+				c.sendText(fmt.Sprintf("[ reconnect failed: %v ]\r\n", err))
+				continue
+			}
+			c.sendText("[ reconnected ]\r\n")
+			reconnected = true
+			break
+		}
+		if !reconnected {
+			c.errors <- fmt.Errorf("connection lost after %d reconnect attempts", c.retry.MaxAttempts)
+			break
+		}
+	}
+	close(c.events)
+}
+
+// readLoop runs the telnet byte loop until the connection drops.
+// Returns non-nil only for unexpected (non-EOF) errors.
+func (c *Client) readLoop() error {
 	reader := bufio.NewReader(c.conn)
 	p := &telnetParser{client: c}
 	for {
 		b, err := reader.ReadByte()
 		if err != nil {
-			p.flushText() // ensure last bits are sent
-			if err != io.EOF {
-				c.errors <- err
+			p.flushText()
+			if err == io.EOF {
+				return nil
 			}
-			close(c.events)
-			return
+			return err
 		}
 		p.handleByte(b)
-		// If no more bytes are immediately available in the buffer,
-		// flush the parser to ensure prompts are displayed.
 		if reader.Buffered() == 0 {
 			p.flushText()
 		}

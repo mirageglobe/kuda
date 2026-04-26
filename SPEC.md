@@ -173,7 +173,7 @@ this triggers the workflow which:
 ---
 
 ### Near Term
-- [ ] `[network]` implement auto-reconnect with configurable backoff [easy]
+- [x] `[network]` implement auto-reconnect with configurable backoff [easy]
 - [ ] `[ui]` add settings/connection status display (MCCP, telnet details) [easy]
 - [ ] `[engine]` add toggle for filtering Aardwolf-specific text tags (e.g., {say}, {affoff}) [easy]
 - [ ] `[ui]` add system info (date, time, CPU/memory) to top bar [easy]
