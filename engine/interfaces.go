@@ -46,6 +46,9 @@ type VitalsInfo struct {
 }
 
 type RoomInfo struct {
-	Vnum int
-	Name string
+	Vnum      int
+	Name      string
+	Exits     map[string]int // direction -> destination vnum
+	X, Y, Z   int            // grid coordinates (Aardwolf: from room.info coords)
+	HasCoords bool           // true when the server provided real coordinates
 }

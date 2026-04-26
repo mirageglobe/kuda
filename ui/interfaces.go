@@ -24,6 +24,12 @@ type Connection interface {
 	ErrorsCh() <-chan error
 }
 
+// MapView is the rendering interface for the mapper.
+// Defined here so ui does not import the mapper package directly.
+type MapView interface {
+	Render(w, h int) string
+}
+
 // Telnet constants for UI interpretation.
 const (
 	TelnetCmdWILL = 251

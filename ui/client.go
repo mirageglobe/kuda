@@ -24,12 +24,16 @@ type ErrorMsg struct {
 	Err error
 }
 
-var statusHint = hintStyle.Render("[ esc: server list  ctrl+l: toggle lua  ctrl+c: quit ]")
+const mapPanelHeight = 9
+
+var statusHint = hintStyle.Render("[ esc: server list  ctrl+l: toggle lua  ctrl+p: toggle map  ctrl+c: quit ]")
 
 // ClientModel is the main connected-session view.
 type ClientModel struct {
 	client   Connection
 	engine   engine.GameState
+	mapView  MapView
+	showMap  bool
 	viewport viewport.Model
 	input    textinput.Model
 	history  *strings.Builder // raw history with ANSI codes
@@ -37,7 +41,7 @@ type ClientModel struct {
 	height   int
 }
 
-func NewClientModel(client Connection, state engine.GameState) ClientModel {
+func NewClientModel(client Connection, state engine.GameState, mapView MapView) ClientModel {
 	ti := textinput.New()
 	ti.Placeholder = "type a command..."
 	ti.Focus()
@@ -48,10 +52,23 @@ func NewClientModel(client Connection, state engine.GameState) ClientModel {
 	return ClientModel{
 		client:   client,
 		engine:   state,
+		mapView:  mapView,
+		showMap:  true,
 		input:    ti,
 		viewport: vp,
 		history:  &strings.Builder{},
 	}
+}
+
+func (m *ClientModel) viewportHeight() int {
+	h := m.height - 7 // 5 for status/input/hint + 2 for border top/bottom
+	if m.showMap {
+		h -= mapPanelHeight
+	}
+	if h < 1 {
+		h = 1
+	}
+	return h
 }
 
 func (m *ClientModel) refreshViewport() {
@@ -60,7 +77,7 @@ func (m *ClientModel) refreshViewport() {
 	}
 	// wordwrap.String is ANSI-aware. wrapping ensures colors don't bleed
 	// and text doesn't overflow horizontally.
-	wrapped := wordwrap.String(m.history.String(), m.width)
+	wrapped := wordwrap.String(m.history.String(), m.width-2) // -2 for border chars
 	m.viewport.SetContent(wrapped)
 	m.viewport.GotoBottom()
 }
@@ -101,6 +118,11 @@ func (m ClientModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case tea.KeyCtrlL:
 			m.engine.ToggleLua()
 			return m, nil
+		case tea.KeyCtrlP:
+			m.showMap = !m.showMap
+			m.viewport.Height = m.viewportHeight()
+			m.refreshViewport()
+			return m, nil
 		case tea.KeyEsc:
 			return m, func() tea.Msg { return ReturnToLauncherMsg{} }
 		case tea.KeyEnter:
@@ -116,8 +138,8 @@ func (m ClientModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height
-		m.viewport.Width = msg.Width
-		m.viewport.Height = msg.Height - 5 // input + status + hint + 2 spacing lines
+		m.viewport.Width = msg.Width - 2 // -2 for border chars
+		m.viewport.Height = m.viewportHeight()
 		m.input.Width = msg.Width
 		m.refreshViewport()
 
@@ -161,10 +183,7 @@ func (m ClientModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m ClientModel) View() string {
-	content := m.viewport.View()
-	if content == "" {
-		content = "Waiting for data..."
-	}
+	content := viewportBorderStyle.Render(m.viewport.View())
 
 	// Render Status Bar
 	v := m.engine.Vitals()
@@ -182,5 +201,9 @@ func (m ClientModel) View() string {
 		subtitleStyle.Render(room.Name),
 	)
 
+	if m.showMap && m.mapView != nil {
+		mapOut := m.mapView.Render(m.width, mapPanelHeight)
+		return fmt.Sprintf("%s\n%s\n%s\n%s\n%s", content, mapOut, statusBar, m.input.View(), statusHint)
+	}
 	return fmt.Sprintf("%s\n%s\n%s\n%s", content, statusBar, m.input.View(), statusHint)
 }
