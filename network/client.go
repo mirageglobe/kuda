@@ -9,6 +9,7 @@ import (
 	"math"
 	"net"
 	"strings"
+	"sync/atomic"
 	"time"
 )
 
@@ -33,9 +34,21 @@ type Client struct {
 	events      chan Event
 	errors      chan error
 	pendingMCCP bool
+	mccpActive  atomic.Bool
+	gmcpActive  atomic.Bool
+	echoActive  atomic.Bool
 	address     string
 	retry       RetryConfig
 }
+
+// IsMCCPActive reports whether MCCP (zlib compression) is active on this connection.
+func (c *Client) IsMCCPActive() bool { return c.mccpActive.Load() }
+
+// IsGMCPActive reports whether GMCP was negotiated with the server.
+func (c *Client) IsGMCPActive() bool { return c.gmcpActive.Load() }
+
+// IsEchoActive reports whether the server has taken over echo (e.g. password input).
+func (c *Client) IsEchoActive() bool { return c.echoActive.Load() }
 
 // NewClient creates a new network client with default retry settings.
 func NewClient() *Client {
