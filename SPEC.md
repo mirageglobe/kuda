@@ -179,7 +179,7 @@ this triggers the workflow which:
 - [ ] `[ui]` add top bar with version, project name, and GitHub link [easy]
 - [ ] `[ui]` improve UI with icons and visual symbols [easy]
 - [x] `[ui]` allow quitting mud session to return to the main screen [easy]
-- [ ] `[network]` allow aardwolf to quit game cleanly [easy]
+- [x] `[network]` allow aardwolf to quit game cleanly [easy]
 - [ ] complete M1 TCP connection and TUI output rendering. [easy]
 - [ ] wire up basic input loop with command history. [easy]
 - [ ] `[network]` add Aardwolf-specific GMCP module handlers (stats, room, inventory) [medium]

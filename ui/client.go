@@ -154,7 +154,7 @@ func (m ClientModel) waitForNetworkEvent() tea.Cmd {
 		select {
 		case ev, ok := <-m.client.EventsCh():
 			if !ok {
-				return ErrorMsg{Err: fmt.Errorf("network connection closed")}
+				return ReturnToLauncherMsg{}
 			}
 			return NetworkEventMsg{Event: ev}
 		case err := <-m.client.ErrorsCh():
@@ -225,6 +225,10 @@ func (m ClientModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			m.historyIdx = -1
 			m.inputDraft = ""
+			// Signal clean disconnect before the server closes on "quit".
+			if strings.EqualFold(strings.TrimSpace(cmd), "quit") {
+				_ = m.client.Close()
+			}
 			// Process command through the engine (aliases/scripting)
 			if err := m.engine.Execute(cmd); err != nil {
 				fmt.Fprintf(m.history, "\n[ ERROR: %v ]\n", err)
