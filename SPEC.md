@@ -175,7 +175,7 @@ this triggers the workflow which:
 ### Near Term
 - [x] `[network]` implement auto-reconnect with configurable backoff [easy]
 - [x] `[ui]` add settings/connection status display (MCCP, telnet details) [easy]
-- [ ] `[ui]` add system info (date, time, CPU/memory) to top bar [easy]
+- [x] `[ui]` add system info (date, time, CPU/memory) to top bar [easy]
 - [x] `[ui]` add top bar with version, project name, and GitHub link [easy]
 - [ ] `[ui]` improve UI with icons and visual symbols [easy]
 - [x] `[ui]` allow quitting mud session to return to the main screen [easy]

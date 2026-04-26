@@ -2,7 +2,9 @@ package ui
 
 import (
 	"fmt"
+	"runtime"
 	"strings"
+	"time"
 
 	"github.com/charmbracelet/bubbles/textinput"
 	"github.com/charmbracelet/bubbles/viewport"
@@ -73,6 +75,13 @@ const mapPanelWidth = 35 // inner width of the right-side map panel
 
 var statusHint = hintStyle.Render("[ ?: help  esc: launcher  ctrl+l: lua  ctrl+p: map  ctrl+r: raw  ctrl+c: quit ]")
 
+// sysTick is the message fired by the 1-second system info ticker.
+type sysTick struct{}
+
+func sysTickCmd() tea.Cmd {
+	return tea.Tick(time.Second, func(time.Time) tea.Msg { return sysTick{} })
+}
+
 // ClientModel is the main connected-session view.
 type ClientModel struct {
 	client     Connection
@@ -89,6 +98,7 @@ type ClientModel struct {
 	inputDraft string           // saved input before history navigation began
 	width      int
 	height     int
+	memMB      uint64 // heap alloc in MB, updated each sysTick
 }
 
 func NewClientModel(client Connection, state engine.GameState, mapView MapView) ClientModel {
@@ -146,6 +156,7 @@ func (m ClientModel) Init() tea.Cmd {
 	return tea.Batch(
 		textinput.Blink,
 		m.waitForNetworkEvent(),
+		sysTickCmd(),
 	)
 }
 
@@ -271,6 +282,12 @@ func (m ClientModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.refreshViewport()
 		cmds = append(cmds, m.waitForNetworkEvent())
 
+	case sysTick:
+		var ms runtime.MemStats
+		runtime.ReadMemStats(&ms)
+		m.memMB = ms.Alloc / 1024 / 1024
+		return m, sysTickCmd()
+
 	case ErrorMsg:
 		fmt.Fprintf(m.history, "\n[ ERROR: %v ]\n", msg.Err)
 		m.refreshViewport()
@@ -332,11 +349,22 @@ func (m ClientModel) View() string {
 		hintStyle.Render(connInfo),
 	)
 
-	topBar := fmt.Sprintf(" %s %s  %s",
+	now := time.Now()
+	topLeft := fmt.Sprintf(" %s %s  %s",
 		logoStyle.Render("kuda"),
 		hintStyle.Render("v"+AppVersion),
 		hintStyle.Render("github.com/mirageglobe/kuda"),
 	)
+	topRight := hintStyle.Render(fmt.Sprintf("%s  %s  mem %d MB ",
+		now.Format("2006-01-02"),
+		now.Format("15:04:05"),
+		m.memMB,
+	))
+	topPad := m.width - lipgloss.Width(topLeft) - lipgloss.Width(topRight)
+	if topPad < 0 {
+		topPad = 0
+	}
+	topBar := topLeft + strings.Repeat(" ", topPad) + topRight
 
 	if m.showMap && m.mapView != nil {
 		mapRendered := viewportBorderStyle.Render(m.mapView.Render(mapPanelWidth, m.viewportHeight()))
