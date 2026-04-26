@@ -12,23 +12,23 @@
 
 ## 2. Complexity Score
 
-| Dimension | Score | Notes |
-| :--- | :--- | :--- |
-| overall | 3 / 5 | moderate; multi-package Go with protocol parsing and Lua scripting |
-| network layer | 3 / 5 | telnet state machine, GMCP framing, channel-based i/o |
-| engine / lua | 4 / 5 | embedded Lua VM, trigger/alias eval, GMCP-fed state |
-| ui / tui | 2 / 5 | standard bubbletea patterns, two simple models |
-| mapper | 3 / 5 | room graph traversal, map rendering |
+| Dimension     | Score | Notes                                                          |
+| :------------ | :---- | :------------------------------------------------------------- |
+| overall       | 3 / 5 | moderate; multi-package Go with protocol parsing and Lua scripting |
+| network layer | 3 / 5 | telnet state machine, GMCP framing, channel-based i/o          |
+| engine / lua  | 4 / 5 | embedded Lua VM, trigger/alias eval, GMCP-fed state            |
+| ui / tui      | 2 / 5 | standard bubbletea patterns, two simple models                 |
+| mapper        | 3 / 5 | room graph traversal, map rendering                            |
 
 ---
 
 ## 3. Technology Stack
 
-| Tool | Purpose |
-| :--- | :--- |
-| Go | Primary language |
-| `bubbletea` | TUI framework |
-| `lua` | Scripting engine |
+| Tool         | Purpose          |
+| :----------- | :--------------- |
+| Go           | Primary language |
+| `bubbletea`  | TUI framework    |
+| `lua`        | Scripting engine |
 
 ---
 
@@ -38,17 +38,25 @@
 kuda/
 ├── main.go             # entry point — launches bubbletea program
 ├── network/            # tcp, telnet, gmcp parsing — no game logic
-│   ├── client.go       # tcp connection lifecycle
+│   ├── doc.go          # package ownership declaration
+│   ├── client.go       # tcp/tls connection lifecycle
 │   ├── client_test.go
 │   ├── telnet.go       # telnet state machine (IAC/DO/WILL/SB/SE)
 │   └── events.go       # event types and telnet/gmcp constants
 ├── engine/             # game state, lua vm, triggers and aliases
+│   ├── doc.go          # package ownership declaration
 │   ├── engine.go       # engine lifecycle
+│   ├── interfaces.go   # EventSource and GameState interfaces
 │   ├── state.go        # character/room/world state (fed by gmcp)
 │   └── lua.go          # lua vm integration
 ├── mapper/             # room graph and map rendering
+│   ├── doc.go          # package ownership declaration
 │   └── mapper.go
 └── ui/                 # bubbletea tui views
+    ├── doc.go          # package ownership declaration
+    ├── interfaces.go   # Connection interface consumed by ui
+    ├── provider.go     # server list and connection config
+    ├── splash.go       # splash/intro screen model
     ├── launch.go       # server selection screen
     ├── client.go       # main connected session view
     └── styles.go       # shared lipgloss styles
@@ -56,22 +64,22 @@ kuda/
 
 ### Package Responsibilities
 
-| Package | Owns | Does NOT own |
-| :--- | :--- | :--- |
-| `network` | tcp i/o, telnet state machine, gmcp framing | game state, ui state |
-| `engine` | lua vm lifecycle, trigger/alias eval, gmcp-fed state | rendering, network i/o |
-| `mapper` | room graph, map rendering | game state (reads from engine) |
-| `ui` | bubbletea models, view rendering, input handling | business logic, network calls |
+| Package    | Owns                                              | Does NOT own                   |
+| :--------- | :------------------------------------------------ | :----------------------------- |
+| `network`  | tcp i/o, telnet state machine, gmcp framing       | game state, ui state           |
+| `engine`   | lua vm lifecycle, trigger/alias eval, gmcp-fed state | rendering, network i/o      |
+| `mapper`   | room graph, map rendering                         | game state (reads from engine) |
+| `ui`       | bubbletea models, view rendering, input handling  | business logic, network calls  |
 
 ### Interfaces
 
 cross-package communication is enforced via interfaces. concrete types must not be imported across boundaries.
 
-| Interface | Defined in | Implemented by | Used by |
-| :--- | :--- | :--- | :--- |
-| `ui.Connection` | `ui/interfaces.go` | `clientAdapter` (main.go) | `ui.ClientModel` |
-| `engine.EventSource` | `engine/interfaces.go` | adapter (future, main.go) | `engine.Engine` (future) |
-| `engine.GameState` | `engine/interfaces.go` | `engine.Engine` (future) | `ui`, `mapper` |
+| Interface            | Defined in              | Implemented by              | Used by                   |
+| :------------------- | :---------------------- | :-------------------------- | :------------------------ |
+| `ui.Connection`      | `ui/interfaces.go`      | `clientAdapter` (main.go)   | `ui.ClientModel`          |
+| `engine.EventSource` | `engine/interfaces.go`  | adapter (future, main.go)   | `engine.Engine` (future)  |
+| `engine.GameState`   | `engine/interfaces.go`  | `engine.Engine` (future)    | `ui`, `mapper`            |
 
 ---
 
@@ -100,12 +108,12 @@ kuda uses a common telnet state machine that negotiates capabilities (GMCP, MCCP
 
 ### Milestones
 
-| Milestone | Goal | Status |
-| :--- | :--- | :--- |
-| M1 — minimal viable client | TCP connection, raw stream display, basic input | in progress |
-| M2 — protocol foundation | Telnet negotiation (GA/ECHO), MCCP compression | planned |
-| M3 — aardwolf protocols | GMCP parsing + state management, MSP support | planned |
-| M4 — extensibility | Lua scripting, basic mapper | planned |
+| Milestone                  | Goal                                             | Status      |
+| :------------------------- | :----------------------------------------------- | :---------- |
+| M1 — minimal viable client | TCP connection, raw stream display, basic input  | complete    |
+| M2 — protocol foundation   | Telnet negotiation (GA/ECHO), MCCP compression   | complete    |
+| M3 — aardwolf protocols    | GMCP parsing + state management, MSP support     | complete    |
+| M4 — extensibility         | Lua scripting, basic mapper                      | in progress |
 
 ---
 
@@ -113,32 +121,55 @@ kuda uses a common telnet state machine that negotiates capabilities (GMCP, MCCP
 - [x] basic TCP socket connection to a host/port.
 - [x] raw stream display in a simple TUI.
 - [x] basic user command input.
+- [x] ANSI colour support and stripping.
 
 ### M2 — Protocol Foundation
 - [x] basic Telnet negotiation (support for standard GA/ECHO).
 - [x] implement MCCP (compression) for performance.
+- [x] TLS support for secure connections.
 
 ### M3 — Aardwolf & Advanced Protocols
 - [x] GMCP parsing and state management.
 
 ### M4 — Extensibility
 - [/] integrate Lua for user-defined triggers/aliases (VM embedded, basic API).
-- [ ] basic mapper implementation for visual room tracking.
+- [x] basic mapper implementation for visual room tracking.
 
 ---
 
 ### Near Term
-- complete M1 TCP connection and TUI output rendering.
-- wire up basic input loop with command history.
-- establish project structure for engine, network, ui, and mapper packages.
+- [x] `[mapper]` persist room graph to disk with periodic auto-save and load on startup [easy]
+- [ ] `[network]` implement auto-reconnect with configurable backoff [easy]
+- [ ] `[network]` add Aardwolf-specific GMCP module handlers (stats, room, inventory) [medium]
+- [ ] `[network]` add MSP (MUD Sound Protocol) support [medium]
+- [ ] `[build]` setup GoReleaser for automated versioning and Homebrew deployment [medium]
+- [ ] `[engine/ui]` add support for user-defined hotkeys/aliases via Lua [medium]
+- [ ] `[ui]` implement layered input manager to handle keybinding/command conflicts [medium]
+- [ ] `[ui]` add search feature to scrollback buffer [medium]
+- [ ] `[network/engine/ui]` implement virtual scrollback buffer for performance [hard]
+- [ ] `[engine/ui]` implement regex-based line diversion (combat/spells/chat) [medium]
+- [ ] `[engine/ui]` add event-driven spell/buff dashboard [medium]
+- [ ] `[network/engine]` improve speedwalks and speedrun capabilities [medium]
+- [ ] `[ui]` add settings/connection status display (MCCP, telnet details) [easy]
+- [ ] `[engine]` add toggle for filtering Aardwolf-specific text tags (e.g., {say}, {affoff}) [easy]
+- [ ] `[ui]` investigate dedicated UI panels for GMCP-backed chat and equipment [medium]
+- [ ] `[ui]` add Aardwolf in-game time and date ticker to top bar [medium]
+- [ ] `[ui]` add system info (date, time, CPU/memory) to top bar [easy]
+- [ ] `[ui]` add top bar with version, project name, and GitHub link [easy]
+- [ ] `[ui]` add theming support and theme switcher [medium]
+- [ ] `[ui]` improve UI with icons and visual symbols [easy]
+- [ ] `[engine/ui]` add toggle for showing and editing lua based aliases [medium]
+- [x] `[ui]` toggle map mode (new screen or overlay) [medium]
+- [ ] `[ui]` allow quitting mud session to return to the main screen [easy]
+- [x] `[ui]` improve display with border panes [medium]
+- [ ] `[ui]` have a help menu hotkey "?" [easy]
+- [ ] `[ui]` navigation up and down should go back in history of commands [easy]
+- [ ] `[network]` allow aardwolf to quit game cleanly [easy]
+- [ ] complete M1 TCP connection and TUI output rendering. [easy]
+- [ ] wire up basic input loop with command history. [easy]
+- [ ] establish project structure for engine, network, ui, and mapper packages. [medium]
 
 ### Ideas
-- MSP (MUD Sound Protocol) support.
-- scrollback buffer with search.
 - split-pane layout (main output + status/map panel).
-- ANSI colour support and stripping. (completed)
-- auto-reconnect with configurable backoff.
-- Aardwolf-specific GMCP module handlers (character stats, room info, inventory).
 - visual mapper with room graph rendering.
-- Lua trigger/alias editor within the TUI.
 - plugin system for protocol extensions.

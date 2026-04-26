@@ -3,10 +3,12 @@ package main
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/mirageglobe/kuda/engine"
+	"github.com/mirageglobe/kuda/mapper"
 	"github.com/mirageglobe/kuda/network"
 	"github.com/mirageglobe/kuda/ui"
 )
@@ -21,6 +23,7 @@ var (
 type rootModel struct {
 	current       tea.Model
 	engine        *engine.Engine
+	mapper        *mapper.Mapper
 	width, height int
 }
 
@@ -50,9 +53,9 @@ func (m rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case ui.ServerSelectedMsg:
 		if msg.Address == ui.MockAddress {
 			conn := newMockConnection()
-			// Mock engine
 			m.engine = engine.NewEngine(newEngineAdapter(conn))
-			next := ui.NewClientModel(conn, m.engine)
+			go watchRooms(m.engine, m.mapper)
+			next := ui.NewClientModel(conn, m.engine, m.mapper)
 			m.current = next
 			return m, tea.Batch(next.Init(), func() tea.Msg {
 				return tea.WindowSizeMsg{Width: m.width, Height: m.height}
@@ -68,7 +71,8 @@ func (m rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, cmd
 		}
 		m.engine = engine.NewEngine(newEngineAdapter(msg.adapter))
-		next := ui.NewClientModel(msg.adapter, m.engine)
+		go watchRooms(m.engine, m.mapper)
+		next := ui.NewClientModel(msg.adapter, m.engine, m.mapper)
 		m.current = next
 		return m, tea.Batch(next.Init(), func() tea.Msg {
 			return tea.WindowSizeMsg{Width: m.width, Height: m.height}
@@ -229,10 +233,39 @@ func (m *mockConnection) Write(data []byte) error {
 func (m *mockConnection) EventsCh() <-chan ui.Event { return m.events }
 func (m *mockConnection) ErrorsCh() <-chan error    { return m.errors }
 
+// watchRooms forwards room change events from an engine to the mapper.
+// It exits when the engine's RoomCh is closed (on disconnect) and saves.
+func watchRooms(eng *engine.Engine, mp *mapper.Mapper) {
+	for room := range eng.RoomCh() {
+		mp.Update(mapper.RoomData{
+			Vnum:      room.Vnum,
+			Name:      room.Name,
+			Exits:     room.Exits,
+			X:         room.X,
+			Y:         room.Y,
+			Z:         room.Z,
+			HasCoords: room.HasCoords,
+		})
+	}
+	_ = mp.Save()
+}
+
+// mapSavePath returns the platform config directory path for the map file.
+func mapSavePath() string {
+	dir, err := os.UserConfigDir()
+	if err != nil {
+		dir = "."
+	}
+	return filepath.Join(dir, "kuda", "map.json")
+}
+
 // ── entry point ──────────────────────────────────────────────────────────────
 
 func main() {
-	model := rootModel{current: ui.NewSplashModel()}
+	model := rootModel{
+		current: ui.NewSplashModel(),
+		mapper:  mapper.Load(mapSavePath()),
+	}
 	p := tea.NewProgram(model, tea.WithAltScreen())
 	if _, err := p.Run(); err != nil {
 		fmt.Printf("error running program: %v\n", err)
