@@ -57,8 +57,8 @@ var statusHint = hintStyle.Render("[ ?: help  esc: launcher  ctrl+l: lua  ctrl+p
 
 // ClientModel is the main connected-session view.
 type ClientModel struct {
-	client   Connection
-	engine   engine.GameState
+	client     Connection
+	engine     engine.GameState
 	mapView    MapView
 	showMap    bool
 	showHelp   bool
