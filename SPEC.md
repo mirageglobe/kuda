@@ -138,7 +138,7 @@ kuda uses a common telnet state machine that negotiates capabilities (GMCP, MCCP
 ---
 
 ### Near Term
-- [ ] `[ui]` toggle raw mode — print all received bytes unprocessed for debugging [easy]
+- [x] `[ui]` toggle raw mode — print all received bytes unprocessed for debugging [easy]
 - [x] `[mapper]` persist room graph to disk with periodic auto-save and load on startup [easy]
 - [ ] `[network]` implement auto-reconnect with configurable backoff [easy]
 - [ ] `[network]` add Aardwolf-specific GMCP module handlers (stats, room, inventory) [medium]
