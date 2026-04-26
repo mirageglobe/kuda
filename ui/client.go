@@ -7,6 +7,7 @@ import (
 	"github.com/charmbracelet/bubbles/textinput"
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/mirageglobe/kuda/engine"
 	"github.com/muesli/reflow/wordwrap"
 )
@@ -24,7 +25,7 @@ type ErrorMsg struct {
 	Err error
 }
 
-const mapPanelHeight = 9
+const mapPanelWidth = 35 // inner width of the right-side map panel
 
 var statusHint = hintStyle.Render("[ esc: server list  ctrl+l: toggle lua  ctrl+p: toggle map  ctrl+c: quit ]")
 
@@ -53,7 +54,7 @@ func NewClientModel(client Connection, state engine.GameState, mapView MapView) 
 		client:   client,
 		engine:   state,
 		mapView:  mapView,
-		showMap:  true,
+		showMap:  false,
 		input:    ti,
 		viewport: vp,
 		history:  &strings.Builder{},
@@ -62,13 +63,21 @@ func NewClientModel(client Connection, state engine.GameState, mapView MapView) 
 
 func (m *ClientModel) viewportHeight() int {
 	h := m.height - 7 // 5 for status/input/hint + 2 for border top/bottom
-	if m.showMap {
-		h -= mapPanelHeight
-	}
 	if h < 1 {
 		h = 1
 	}
 	return h
+}
+
+func (m *ClientModel) viewportInnerWidth() int {
+	w := m.width - 2 // subtract viewport border
+	if m.showMap {
+		w -= mapPanelWidth + 2 // subtract map panel content + its border
+	}
+	if w < 1 {
+		w = 1
+	}
+	return w
 }
 
 func (m *ClientModel) refreshViewport() {
@@ -77,7 +86,7 @@ func (m *ClientModel) refreshViewport() {
 	}
 	// wordwrap.String is ANSI-aware. wrapping ensures colors don't bleed
 	// and text doesn't overflow horizontally.
-	wrapped := wordwrap.String(m.history.String(), m.width-2) // -2 for border chars
+	wrapped := wordwrap.String(m.history.String(), m.viewportInnerWidth())
 	m.viewport.SetContent(wrapped)
 	m.viewport.GotoBottom()
 }
@@ -120,6 +129,7 @@ func (m ClientModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		case tea.KeyCtrlP:
 			m.showMap = !m.showMap
+			m.viewport.Width = m.viewportInnerWidth()
 			m.viewport.Height = m.viewportHeight()
 			m.refreshViewport()
 			return m, nil
@@ -138,7 +148,7 @@ func (m ClientModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height
-		m.viewport.Width = msg.Width - 2 // -2 for border chars
+		m.viewport.Width = m.viewportInnerWidth()
 		m.viewport.Height = m.viewportHeight()
 		m.input.Width = msg.Width
 		m.refreshViewport()
@@ -202,8 +212,8 @@ func (m ClientModel) View() string {
 	)
 
 	if m.showMap && m.mapView != nil {
-		mapOut := m.mapView.Render(m.width, mapPanelHeight)
-		return fmt.Sprintf("%s\n%s\n%s\n%s\n%s", content, mapOut, statusBar, m.input.View(), statusHint)
+		mapRendered := viewportBorderStyle.Render(m.mapView.Render(mapPanelWidth, m.viewportHeight()))
+		content = lipgloss.JoinHorizontal(lipgloss.Top, content, mapRendered)
 	}
 	return fmt.Sprintf("%s\n%s\n%s\n%s", content, statusBar, m.input.View(), statusHint)
 }
