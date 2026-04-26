@@ -59,14 +59,17 @@ var statusHint = hintStyle.Render("[ esc: launcher  ctrl+l: lua  ctrl+p: map  ct
 type ClientModel struct {
 	client   Connection
 	engine   engine.GameState
-	mapView  MapView
-	showMap  bool
-	rawMode  bool
-	viewport viewport.Model
-	input    textinput.Model
-	history  *strings.Builder // raw history with ANSI codes
-	width    int
-	height   int
+	mapView    MapView
+	showMap    bool
+	rawMode    bool
+	viewport   viewport.Model
+	input      textinput.Model
+	history    *strings.Builder // raw history with ANSI codes
+	cmdHistory []string         // previously entered commands
+	historyIdx int              // current position in cmdHistory; -1 = not navigating
+	inputDraft string           // saved input before history navigation began
+	width      int
+	height     int
 }
 
 func NewClientModel(client Connection, state engine.GameState, mapView MapView) ClientModel {
@@ -78,13 +81,14 @@ func NewClientModel(client Connection, state engine.GameState, mapView MapView) 
 	vp.SetContent("Connected...")
 
 	return ClientModel{
-		client:   client,
-		engine:   state,
-		mapView:  mapView,
-		showMap:  false,
-		input:    ti,
-		viewport: vp,
-		history:  &strings.Builder{},
+		client:     client,
+		engine:     state,
+		mapView:    mapView,
+		showMap:    false,
+		input:      ti,
+		viewport:   vp,
+		history:    &strings.Builder{},
+		historyIdx: -1,
 	}
 }
 
@@ -163,10 +167,39 @@ func (m ClientModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case tea.KeyCtrlR:
 			m.rawMode = !m.rawMode
 			return m, nil
+		case tea.KeyUp:
+			if len(m.cmdHistory) == 0 {
+				return m, nil
+			}
+			if m.historyIdx == -1 {
+				m.inputDraft = m.input.Value()
+				m.historyIdx = len(m.cmdHistory) - 1
+			} else if m.historyIdx > 0 {
+				m.historyIdx--
+			}
+			m.input.SetValue(m.cmdHistory[m.historyIdx])
+			return m, nil
+		case tea.KeyDown:
+			if m.historyIdx == -1 {
+				return m, nil
+			}
+			m.historyIdx++
+			if m.historyIdx >= len(m.cmdHistory) {
+				m.historyIdx = -1
+				m.input.SetValue(m.inputDraft)
+			} else {
+				m.input.SetValue(m.cmdHistory[m.historyIdx])
+			}
+			return m, nil
 		case tea.KeyEsc:
 			return m, func() tea.Msg { return ReturnToLauncherMsg{} }
 		case tea.KeyEnter:
 			cmd := m.input.Value()
+			if cmd != "" {
+				m.cmdHistory = append(m.cmdHistory, cmd)
+			}
+			m.historyIdx = -1
+			m.inputDraft = ""
 			// Process command through the engine (aliases/scripting)
 			if err := m.engine.Execute(cmd); err != nil {
 				fmt.Fprintf(m.history, "\n[ ERROR: %v ]\n", err)
