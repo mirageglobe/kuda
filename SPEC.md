@@ -164,7 +164,7 @@ kuda uses a common telnet state machine that negotiates capabilities (GMCP, MCCP
 - [ ] `[ui]` allow quitting mud session to return to the main screen [easy]
 - [x] `[ui]` improve display with border panes [medium]
 - [ ] `[ui]` have a help menu hotkey "?" [easy]
-- [ ] `[ui]` navigation up and down should go back in history of commands [easy]
+- [x] `[ui]` navigation up and down should go back in history of commands [easy]
 - [ ] `[network]` allow aardwolf to quit game cleanly [easy]
 - [ ] complete M1 TCP connection and TUI output rendering. [easy]
 - [ ] wire up basic input loop with command history. [easy]
