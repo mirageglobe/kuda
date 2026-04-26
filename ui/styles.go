@@ -2,6 +2,9 @@ package ui
 
 import "github.com/charmbracelet/lipgloss"
 
+// AppVersion is set by main before creating any model, injected from build-time ldflags.
+var AppVersion = "dev"
+
 var (
 	logoStyle           = lipgloss.NewStyle().Foreground(lipgloss.Color("12")).Bold(true)
 	subtitleStyle       = lipgloss.NewStyle().Foreground(lipgloss.Color("8"))
