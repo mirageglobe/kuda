@@ -48,4 +48,4 @@ compile-time interface checks (`var _ Interface = (*Impl)(nil)`) are present in 
 
 ## file size guideline
 
-keep individual `.go` files under ~150 lines. if a file is growing beyond that, split by responsibility rather than adding to it.
+prefer files that do one thing over files that are short. the signal for splitting is responsibility, not line count — a cohesive telnet state machine or gmcp parser that runs to 200 lines is better left together than artificially split. split when a file clearly owns two distinct concerns, not because it crossed a number.
