@@ -3,12 +3,15 @@ package engine
 import (
 	"fmt"
 	"os"
+	"sync"
 
 	lua "github.com/yuin/gopher-lua"
 )
 
 // ScriptEngine wraps the Lua VM and provides an API for triggers and aliases.
+// mu serialises all LState access; LState is not goroutine-safe.
 type ScriptEngine struct {
+	mu     sync.Mutex
 	L      *lua.LState
 	engine *Engine
 }
@@ -46,6 +49,8 @@ func (se *ScriptEngine) luaSend(L *lua.LState) int {
 // evalAlias evaluates a command through Lua aliases.
 // Returns (modifiedCommand, consumed).
 func (se *ScriptEngine) evalAlias(cmd string) (string, bool) {
+	se.mu.Lock()
+	defer se.mu.Unlock()
 	L := se.L
 	fn := L.GetGlobal("onAlias")
 	if fn.Type() != lua.LTFunction {
@@ -81,6 +86,8 @@ func (se *ScriptEngine) evalAlias(cmd string) (string, bool) {
 
 // evalTrigger evaluates a line of text through Lua triggers.
 func (se *ScriptEngine) evalTrigger(line string) {
+	se.mu.Lock()
+	defer se.mu.Unlock()
 	L := se.L
 	fn := L.GetGlobal("onText")
 	if fn.Type() != lua.LTFunction {

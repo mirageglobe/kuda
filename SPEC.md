@@ -1,16 +1,16 @@
 # Kuda — Specification & Architecture
 
-> A MUD client built in Go, optimized for Aardwolf.
+> A general MUD client built in Go, optimized for Aardwolf.
 
 ---
 
-## 1. Overview
+## 1. overview
 
 **Kuda** is a modern MUD client built in Go, designed for performance and extensibility. Aardwolf [Aardwolf](https://www.aardwolf.com/) is the primary target for testing, but Kuda is designed to support generic MUD protocols.
 
 ---
 
-## 2. Complexity Score
+## 2. complexity score
 
 | Dimension     | Score | Notes                                                          |
 | :------------ | :---- | :------------------------------------------------------------- |
@@ -22,7 +22,7 @@
 
 ---
 
-## 3. Technology Stack
+## 3. technology stack
 
 | Tool         | Purpose          |
 | :----------- | :--------------- |
@@ -32,7 +32,7 @@
 
 ---
 
-## 4. Architecture
+## 4. architecture
 
 ```
 kuda/
@@ -62,16 +62,16 @@ kuda/
     └── styles.go       # shared lipgloss styles
 ```
 
-### Package Responsibilities
+### package responsibilities
 
-| Package    | Owns                                              | Does NOT own                   |
+| package    | owns                                              | does not own                   |
 | :--------- | :------------------------------------------------ | :----------------------------- |
 | `network`  | tcp i/o, telnet state machine, gmcp framing       | game state, ui state           |
 | `engine`   | lua vm lifecycle, trigger/alias eval, gmcp-fed state | rendering, network i/o      |
 | `mapper`   | room graph, map rendering                         | game state (reads from engine) |
 | `ui`       | bubbletea models, view rendering, input handling  | business logic, network calls  |
 
-### Interfaces
+### interfaces
 
 cross-package communication is enforced via interfaces. concrete types must not be imported across boundaries.
 
@@ -83,7 +83,7 @@ cross-package communication is enforced via interfaces. concrete types must not 
 
 ---
 
-## 5. Architecture Decisions
+## 5. architecture decisions
 
 key architectural choices recorded here so they are not accidentally reversed.
 
@@ -104,7 +104,7 @@ kuda uses a common telnet state machine that negotiates capabilities (GMCP, MCCP
 
 ---
 
-## 6. Build & Release
+## 6. build & release
 
 ### local development
 
@@ -139,11 +139,11 @@ this triggers the workflow which:
 
 ---
 
-## 7. Roadmap
+## 7. roadmap
 
-### Milestones
+### milestones
 
-| Milestone                  | Goal                                             | Status      |
+| milestone                  | goal                                             | status      |
 | :------------------------- | :----------------------------------------------- | :---------- |
 | M1 — minimal viable client | TCP connection, raw stream display, basic input  | complete    |
 | M2 — protocol foundation   | Telnet negotiation (GA/ECHO), MCCP compression   | complete    |
@@ -152,36 +152,31 @@ this triggers the workflow which:
 
 ---
 
-### M1 — Minimal Viable Client
+### m1 — minimal viable client
 - [x] basic TCP socket connection to a host/port.
 - [x] raw stream display in a simple TUI.
 - [x] basic user command input.
 - [x] ANSI colour support and stripping.
 
-### M2 — Protocol Foundation
+### m2 — protocol foundation
 - [x] basic Telnet negotiation (support for standard GA/ECHO).
 - [x] implement MCCP (compression) for performance.
 - [x] TLS support for secure connections (generic MUDs via `tls://` prefix; Aardwolf does not offer TLS).
 
-### M3 — Aardwolf & Advanced Protocols
+### m3 — aardwolf & advanced protocols
 - [x] GMCP parsing and state management.
 
-### M4 — Extensibility
+### m4 — extensibility
 - [/] integrate Lua for user-defined triggers/aliases (VM embedded, basic API).
 - [x] basic mapper implementation for visual room tracking.
 
 ---
 
-### Near Term
-- [x] `[network]` implement auto-reconnect with configurable backoff [easy]
-- [x] `[ui]` add settings/connection status display (MCCP, telnet details) [easy]
-- [x] `[ui]` add system info (date, time, CPU/memory) to top bar [easy]
-- [x] `[ui]` add top bar with version, project name, and GitHub link [easy]
-- [x] `[ui]` improve UI with icons and visual symbols [easy]
-- [x] `[ui]` allow quitting mud session to return to the main screen [easy]
-- [x] `[network]` allow aardwolf to quit game cleanly [easy]
-- [ ] complete M1 TCP connection and TUI output rendering. [easy]
-- [ ] wire up basic input loop with command history. [easy]
+### near term
+- [ ] `[ui]` do not hide or filter chats etc from main stream for ease of debugging [easy]
+- [ ] `[ui]` hotkey toggle arrow keys for movement [easy]
+- [ ] `[ui]` aardwolf allow user to enter quit command. on quit (wait ensure disconnected), and return to main screen. there is bug when entering quit in aardwolf [easy]
+- [ ] `[ui]` make sure all toggles and hotkeys references are in help menu [easy]
 - [ ] `[network]` add Aardwolf-specific GMCP module handlers (stats, room, inventory) [medium]
 - [ ] `[network]` add MSP (MUD Sound Protocol) support [medium]
 - [ ] `[engine/ui]` add support for user-defined hotkeys/aliases via Lua [medium]
@@ -197,6 +192,13 @@ this triggers the workflow which:
 - [ ] establish project structure for engine, network, ui, and mapper packages. [medium]
 - [ ] `[network/engine/ui]` implement virtual scrollback buffer for performance. toggle for search and scrollback [hard]
 - [ ] `[engine]` add toggle for filtering Aardwolf-specific text tags (e.g., {say}, {affoff}) [easy]
+- [x] `[network]` implement auto-reconnect with configurable backoff [easy]
+- [x] `[ui]` add settings/connection status display (MCCP, telnet details) [easy]
+- [x] `[ui]` add system info (date, time, CPU/memory) to top bar [easy]
+- [x] `[ui]` add top bar with version, project name, and GitHub link [easy]
+- [x] `[ui]` improve UI with icons and visual symbols [easy]
+- [x] `[ui]` allow quitting mud session to return to the main screen [easy]
+- [x] `[network]` allow aardwolf to quit game cleanly [easy]
 - [x] `[ui]` toggle raw mode — print all received bytes unprocessed for debugging [easy]
 - [x] `[mapper]` persist room graph to disk with periodic auto-save and load on startup [easy]
 - [x] `[ui]` have a help menu hotkey "?" [easy]
@@ -205,7 +207,7 @@ this triggers the workflow which:
 - [x] `[ui]` toggle map mode (new screen or overlay) [medium]
 - [x] `[ui]` improve display with border panes [medium]
 
-### Ideas
+### ideas
 - split-pane layout (main output + status/map panel).
 - visual mapper with room graph rendering.
 - plugin system for protocol extensions.
