@@ -45,10 +45,14 @@ kuda/
 │   └── events.go       # event types and telnet/gmcp constants
 ├── engine/             # game state, lua vm, triggers and aliases
 │   ├── doc.go          # package ownership declaration
-│   ├── engine.go       # engine lifecycle
+│   ├── engine.go       # engine lifecycle and GameState implementation
+│   ├── engine_test.go
+│   ├── gmcp.go         # gmcp message dispatch and state mutations
+│   ├── gmcp_test.go
 │   ├── interfaces.go   # EventSource and GameState interfaces
+│   ├── lua.go          # lua vm integration (ScriptEngine)
 │   ├── state.go        # character/room/world state (fed by gmcp)
-│   └── lua.go          # lua vm integration
+│   └── state_test.go
 ├── mapper/             # room graph and map rendering
 │   ├── doc.go          # package ownership declaration
 │   └── mapper.go
@@ -189,7 +193,7 @@ this triggers the workflow which:
 - [ ] `[ui]` add Aardwolf in-game time and date ticker to top bar [medium]
 - [ ] `[ui]` add theming support and theme switcher [medium]
 - [ ] `[engine/ui]` add toggle for showing and editing lua based aliases [medium]
-- [ ] establish project structure for engine, network, ui, and mapper packages. [medium]
+- [/] establish project structure for engine, network, ui, and mapper packages. [medium]
 - [ ] `[network/engine/ui]` implement virtual scrollback buffer for performance. toggle for search and scrollback [hard]
 - [ ] `[engine]` add toggle for filtering Aardwolf-specific text tags (e.g., {say}, {affoff}) [easy]
 - [x] `[network]` implement auto-reconnect with configurable backoff [easy]
