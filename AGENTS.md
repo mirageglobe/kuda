@@ -20,9 +20,6 @@ this document is intended for ai coding assistants working in the `kuda` directo
 - **language**: go (golang).
 - **tui framework**: bubbletea for terminal interface.
 - **scripting**: lua for triggers and aliases.
-- **testing**: follow idiomatic go testing patterns.
-- **no emojis**: use plain ascii or unicode characters for all content.
-- **comments**: add concise inline comments explaining non-obvious logic.
 
 ## package boundaries — do not cross
 
