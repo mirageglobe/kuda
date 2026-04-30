@@ -34,6 +34,8 @@ func newScriptEngine(e *Engine) *ScriptEngine {
 }
 
 func (se *ScriptEngine) Close() {
+	se.mu.Lock()
+	defer se.mu.Unlock()
 	se.L.Close()
 }
 
