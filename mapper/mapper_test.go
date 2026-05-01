@@ -1,6 +1,7 @@
 package mapper
 
 import (
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -104,5 +105,40 @@ func TestUpdateExitsOnExistingRoom(t *testing.T) {
 	r := m.rooms[1]
 	if r.exits["n"] != 2 {
 		t.Errorf("expected exit n=2, got %v", r.exits)
+	}
+}
+
+func TestReset(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "map.json")
+
+	m := Load(path)
+	m.Update(RoomData{Vnum: 1, Name: "Start", X: 0, Y: 0, HasCoords: true})
+	if err := m.Save(); err != nil {
+		t.Fatalf("save failed: %v", err)
+	}
+
+	backup, err := m.Reset()
+	if err != nil {
+		t.Fatalf("reset failed: %v", err)
+	}
+	if backup == "" {
+		t.Fatal("expected non-empty backup path")
+	}
+	if _, statErr := os.Stat(backup); statErr != nil {
+		t.Errorf("backup file not found: %v", statErr)
+	}
+	if len(m.rooms) != 0 {
+		t.Errorf("want 0 rooms after reset, got %d", len(m.rooms))
+	}
+	if m.current != 0 {
+		t.Errorf("want current=0 after reset, got %d", m.current)
+	}
+
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("save file missing after reset: %v", err)
+	}
+	if string(data) != "[]" {
+		t.Errorf("expected empty json array, got %s", data)
 	}
 }

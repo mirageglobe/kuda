@@ -118,6 +118,7 @@ type clientAdapter struct {
 }
 
 var _ ui.Connection = (*clientAdapter)(nil)
+var _ ui.MapView = (*mapper.Mapper)(nil)
 
 func newClientAdapter(client *network.Client) *clientAdapter {
 	a := &clientAdapter{

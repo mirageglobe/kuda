@@ -2,8 +2,10 @@ package mapper
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
+	"time"
 )
 
 const saveInterval = 10
@@ -64,4 +66,34 @@ func (m *Mapper) Save() error {
 		return err
 	}
 	return os.WriteFile(m.savePath, data, 0o644)
+}
+
+// Reset backs up the current save file with a timestamp suffix and clears the
+// room graph. Returns the backup path. Safe to call with no save file present.
+func (m *Mapper) Reset() (string, error) {
+	backupPath := ""
+	if m.savePath != "" {
+		backupPath = fmt.Sprintf("%s.%s.bak", m.savePath, time.Now().Format("20060102-150405"))
+		if data, err := os.ReadFile(m.savePath); err == nil {
+			if err := os.WriteFile(backupPath, data, 0o644); err != nil {
+				return "", err
+			}
+		}
+	}
+
+	m.mu.Lock()
+	m.rooms = make(map[int]*room)
+	m.current = 0
+	m.updateCount = 0
+	m.mu.Unlock()
+
+	if m.savePath != "" {
+		if err := os.MkdirAll(filepath.Dir(m.savePath), 0o755); err != nil {
+			return backupPath, err
+		}
+		if err := os.WriteFile(m.savePath, []byte("[]"), 0o644); err != nil {
+			return backupPath, err
+		}
+	}
+	return backupPath, nil
 }
