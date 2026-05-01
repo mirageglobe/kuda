@@ -37,6 +37,9 @@ type Connection interface {
 // Defined here so ui does not import the mapper package directly.
 type MapView interface {
 	Render(w, h int) string
+	// Reset backs up the current map file and clears the room graph.
+	// Returns the backup path on success.
+	Reset() (string, error)
 }
 
 // Telnet constants for UI interpretation.

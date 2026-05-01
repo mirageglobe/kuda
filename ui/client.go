@@ -73,7 +73,7 @@ type ErrorMsg struct {
 
 const mapPanelWidth = 35 // inner width of the right-side map panel
 
-var statusHint = hintStyle.Render("[ ?: help · esc: back · ^l: lua · ^p: map · ^r: raw · ^c: quit ]")
+var statusHint = hintStyle.Render("[ ?: help · esc: back · ^l: lua · ^p: map · ^r: raw · ^x: reset map · ^c: quit ]")
 
 // sysTick is the message fired by the 1-second system info ticker.
 type sysTick struct{}
@@ -198,6 +198,19 @@ func (m ClientModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case tea.KeyCtrlR:
 			m.rawMode = !m.rawMode
 			return m, nil
+		case tea.KeyCtrlX:
+			if m.mapView != nil {
+				backup, err := m.mapView.Reset()
+				if err != nil {
+					fmt.Fprintf(m.history, "\n[ MAP RESET FAILED: %v ]\n", err)
+				} else if backup != "" {
+					fmt.Fprintf(m.history, "\n[ MAP RESET — backup: %s ]\n", backup)
+				} else {
+					fmt.Fprintf(m.history, "\n[ MAP RESET ]\n")
+				}
+				m.refreshViewport()
+			}
+			return m, nil
 		case tea.KeyRunes:
 			if msg.String() == "?" && m.input.Value() == "" {
 				m.showHelp = !m.showHelp
@@ -312,6 +325,7 @@ func (m ClientModel) helpView() string {
 		"  ctrl+l     toggle lua scripting",
 		"  ctrl+p     toggle map panel",
 		"  ctrl+r     toggle raw mode (debug)",
+		"  ctrl+x     reset map (backs up current map file)",
 		"  esc        return to server list",
 		"  ctrl+c     quit",
 	}
