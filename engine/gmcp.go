@@ -6,6 +6,25 @@ import (
 	"strings"
 )
 
+var dirAbbrev = map[string]string{
+	"north": "n", "south": "s", "east": "e", "west": "w",
+	"northeast": "ne", "northwest": "nw",
+	"southeast": "se", "southwest": "sw",
+	"up": "u", "down": "d",
+}
+
+func normalizeExits(exits map[string]int) map[string]int {
+	out := make(map[string]int, len(exits))
+	for k, v := range exits {
+		if short, ok := dirAbbrev[strings.ToLower(k)]; ok {
+			out[short] = v
+		} else {
+			out[k] = v
+		}
+	}
+	return out
+}
+
 func (e *Engine) handleGMCP(data []byte) {
 	idx := bytes.IndexAny(data, " {")
 	var msg string
@@ -84,8 +103,7 @@ func (e *Engine) handleGMCP(data []byte) {
 			}
 			ri := RoomInfo{Vnum: vnum, Name: r.Name}
 			if r.Coords != nil {
-				// Aardwolf coords.x is north-south; swap so our X=EW, Y=NS.
-				ri.X, ri.Y, ri.Z = r.Coords.Y, r.Coords.X, r.Coords.Z
+				ri.X, ri.Y, ri.Z = r.Coords.X, r.Coords.Y, r.Coords.Z
 				ri.HasCoords = true
 			}
 			room = e.state.setRoom(ri)
@@ -95,7 +113,7 @@ func (e *Engine) handleGMCP(data []byte) {
 	case strings.HasPrefix(msgLower, "room.exits"):
 		var exits map[string]int
 		if err := json.Unmarshal(payload, &exits); err == nil {
-			room = e.state.setRoomExits(exits)
+			room = e.state.setRoomExits(normalizeExits(exits))
 			sendRoom = true
 		}
 	}

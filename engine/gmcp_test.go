@@ -47,9 +47,8 @@ func TestHandleGMCP_roomInfo(t *testing.T) {
 	if !r.HasCoords {
 		t.Error("want HasCoords=true")
 	}
-	// x=EW=coords.y=20, y=NS=coords.x=10
-	if r.X != 20 || r.Y != 10 {
-		t.Errorf("coords: got X=%d Y=%d, want X=20 Y=10", r.X, r.Y)
+	if r.X != 10 || r.Y != 20 {
+		t.Errorf("coords: got X=%d Y=%d, want X=10 Y=20", r.X, r.Y)
 	}
 }
 
@@ -57,7 +56,7 @@ func TestHandleGMCP_roomExits(t *testing.T) {
 	e := newTestEngine()
 	e.handleGMCP([]byte(`room.exits {"north":100,"south":200}`))
 	exits := e.Room().Exits
-	if exits["north"] != 100 || exits["south"] != 200 {
+	if exits["n"] != 100 || exits["s"] != 200 {
 		t.Errorf("exits: got %v", exits)
 	}
 }

@@ -55,6 +55,29 @@ func TestRenderCurrentRoomMarker(t *testing.T) {
 	}
 }
 
+func TestRenderNorthIsAbove(t *testing.T) {
+	m := New()
+	m.Update(RoomData{Vnum: 1, Name: "S", X: 0, Y: 0, HasCoords: true})
+	m.Update(RoomData{Vnum: 2, Name: "N", X: 0, Y: 1, HasCoords: true})
+	out := m.Render(20, 5)
+	lines := strings.Split(out, "\n")
+	var rowS, rowN int = -1, -1
+	for i, l := range lines {
+		if strings.Contains(l, "[ ]") {
+			rowS = i
+		}
+		if strings.Contains(l, "[*]") {
+			rowN = i
+		}
+	}
+	if rowN == -1 || rowS == -1 {
+		t.Fatalf("missing rooms in output:\n%s", out)
+	}
+	if rowN >= rowS {
+		t.Errorf("north room should be above south: north row=%d, south row=%d\n%s", rowN, rowS, out)
+	}
+}
+
 func TestRenderEastExitConnector(t *testing.T) {
 	m := New()
 	m.Update(RoomData{Vnum: 1, Name: "A", X: 0, Y: 0, HasCoords: true, Exits: map[string]int{"e": 2}})
