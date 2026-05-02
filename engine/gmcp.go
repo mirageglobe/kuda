@@ -14,6 +14,9 @@ var dirAbbrev = map[string]string{
 }
 
 func normalizeExits(exits map[string]int) map[string]int {
+	if exits == nil {
+		return nil
+	}
 	out := make(map[string]int, len(exits))
 	for k, v := range exits {
 		if short, ok := dirAbbrev[strings.ToLower(k)]; ok {
@@ -85,9 +88,10 @@ func (e *Engine) handleGMCP(data []byte) {
 
 	case strings.HasPrefix(msgLower, "room.info"):
 		var r struct {
-			Num    int         `json:"num"`
-			Vnum   interface{} `json:"vnum"`
-			Name   string      `json:"name"`
+			Num    int            `json:"num"`
+			Vnum   interface{}    `json:"vnum"`
+			Name   string         `json:"name"`
+			Exits  map[string]int `json:"exits"`
 			Coords *struct {
 				X int `json:"x"`
 				Y int `json:"y"`
@@ -101,9 +105,10 @@ func (e *Engine) handleGMCP(data []byte) {
 					vnum = int(v)
 				}
 			}
-			ri := RoomInfo{Vnum: vnum, Name: r.Name}
+			ri := RoomInfo{Vnum: vnum, Name: r.Name, Exits: normalizeExits(r.Exits)}
 			if r.Coords != nil {
-				ri.X, ri.Y, ri.Z = r.Coords.X, r.Coords.Y, r.Coords.Z
+				// Aardwolf coords.x = NS axis, coords.y = EW axis; swap to mapper convention X=EW, Y=NS.
+				ri.X, ri.Y, ri.Z = r.Coords.Y, r.Coords.X, r.Coords.Z
 				ri.HasCoords = true
 			}
 			room = e.state.setRoom(ri)

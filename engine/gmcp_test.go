@@ -47,8 +47,9 @@ func TestHandleGMCP_roomInfo(t *testing.T) {
 	if !r.HasCoords {
 		t.Error("want HasCoords=true")
 	}
-	if r.X != 10 || r.Y != 20 {
-		t.Errorf("coords: got X=%d Y=%d, want X=10 Y=20", r.X, r.Y)
+	// Aardwolf coords.x=NS, coords.y=EW; swapped to mapper convention X=EW, Y=NS.
+	if r.X != 20 || r.Y != 10 {
+		t.Errorf("coords: got X=%d Y=%d, want X=20 Y=10", r.X, r.Y)
 	}
 }
 
