@@ -36,21 +36,22 @@ func sysTickCmd() tea.Cmd {
 
 // ClientModel is the main connected-session view.
 type ClientModel struct {
-	client     Connection
-	engine     engine.GameState
-	mapView    MapView
-	showMap    bool
-	showHelp   bool
-	rawMode    bool
-	viewport   viewport.Model
-	input      textinput.Model
-	history    *strings.Builder
-	cmdHistory []string
-	historyIdx int
-	inputDraft string
-	width      int
-	height     int
-	memMB      uint64
+	client          Connection
+	engine          engine.GameState
+	mapView         MapView
+	showMap         bool
+	showHelp        bool
+	rawMode         bool
+	confirmResetMap bool
+	viewport        viewport.Model
+	input           textinput.Model
+	history         *strings.Builder
+	cmdHistory      []string
+	historyIdx      int
+	inputDraft      string
+	width           int
+	height          int
+	memMB           uint64
 }
 
 func NewClientModel(client Connection, state engine.GameState, mapView MapView) ClientModel {
@@ -132,6 +133,21 @@ func (m ClientModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
+		if m.confirmResetMap {
+			if msg.String() == "y" || msg.String() == "Y" {
+				backup, err := m.mapView.Reset()
+				if err != nil {
+					fmt.Fprintf(m.history, "\n[ MAP RESET FAILED: %v ]\n", err)
+				} else if backup != "" {
+					fmt.Fprintf(m.history, "\n[ MAP RESET — backup: %s ]\n", backup)
+				} else {
+					fmt.Fprintf(m.history, "\n[ MAP RESET ]\n")
+				}
+				m.refreshViewport()
+			}
+			m.confirmResetMap = false
+			return m, nil
+		}
 		switch msg.Type {
 		case tea.KeyCtrlC:
 			return m, tea.Quit
@@ -149,15 +165,7 @@ func (m ClientModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		case tea.KeyCtrlX:
 			if m.mapView != nil {
-				backup, err := m.mapView.Reset()
-				if err != nil {
-					fmt.Fprintf(m.history, "\n[ MAP RESET FAILED: %v ]\n", err)
-				} else if backup != "" {
-					fmt.Fprintf(m.history, "\n[ MAP RESET — backup: %s ]\n", backup)
-				} else {
-					fmt.Fprintf(m.history, "\n[ MAP RESET ]\n")
-				}
-				m.refreshViewport()
+				m.confirmResetMap = true
 			}
 			return m, nil
 		case tea.KeyRunes:
