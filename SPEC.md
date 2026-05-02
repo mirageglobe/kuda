@@ -36,7 +36,8 @@
 
 ```
 kuda/
-├── main.go             # entry point — launches bubbletea program
+├── main.go             # entry point — rootModel and bubbletea program setup
+├── adapter.go          # wiring layer — clientAdapter, engineAdapter, mockConnection
 ├── network/            # tcp, telnet, gmcp parsing — no game logic
 │   ├── doc.go          # package ownership declaration
 │   ├── client.go       # tcp/tls connection lifecycle
@@ -62,7 +63,8 @@ kuda/
     ├── provider.go     # server list and connection config
     ├── splash.go       # splash/intro screen model
     ├── launch.go       # server selection screen
-    ├── client.go       # main connected session view
+    ├── client.go       # ClientModel struct, Update, and event handling
+    ├── view.go         # ClientModel View, helpView, and render helpers
     └── styles.go       # shared lipgloss styles
 ```
 
@@ -81,9 +83,9 @@ cross-package communication is enforced via interfaces. concrete types must not 
 
 | Interface            | Defined in              | Implemented by              | Used by                   |
 | :------------------- | :---------------------- | :-------------------------- | :------------------------ |
-| `ui.Connection`      | `ui/interfaces.go`      | `clientAdapter` (main.go)   | `ui.ClientModel`          |
-| `engine.EventSource` | `engine/interfaces.go`  | adapter (future, main.go)   | `engine.Engine` (future)  |
-| `engine.GameState`   | `engine/interfaces.go`  | `engine.Engine` (future)    | `ui`, `mapper`            |
+| `ui.Connection`      | `ui/interfaces.go`      | `clientAdapter` (adapter.go)  | `ui.ClientModel`          |
+| `engine.EventSource` | `engine/interfaces.go`  | `engineAdapter` (adapter.go)  | `engine.Engine`           |
+| `engine.GameState`   | `engine/interfaces.go`  | `engine.Engine`               | `ui`, `mapper`            |
 
 ---
 

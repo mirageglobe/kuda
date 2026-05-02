@@ -18,9 +18,8 @@ func (e *Engine) handleGMCP(data []byte) {
 	}
 	msgLower := strings.ToLower(msg)
 
+	var room RoomInfo
 	var sendRoom bool
-
-	e.state.mu.Lock()
 
 	switch {
 	case msgLower == "char.vitals":
@@ -54,7 +53,7 @@ func (e *Engine) handleGMCP(data []byte) {
 			if vi.MaxMove == 0 {
 				vi.MaxMove = v.MaxSP
 			}
-			e.state.vitals = vi
+			e.state.setVitals(vi)
 		}
 
 	case msgLower == "char.name":
@@ -62,13 +61,13 @@ func (e *Engine) handleGMCP(data []byte) {
 			Name string `json:"name"`
 		}
 		if err := json.Unmarshal(payload, &n); err == nil {
-			e.state.charName = n.Name
+			e.state.setCharName(n.Name)
 		}
 
 	case strings.HasPrefix(msgLower, "room.info"):
 		var r struct {
-			Num    int         `json:"num"`  // Aardwolf uses "num" for room ID
-			Vnum   interface{} `json:"vnum"` // generic MUD fallback
+			Num    int         `json:"num"`
+			Vnum   interface{} `json:"vnum"`
 			Name   string      `json:"name"`
 			Coords *struct {
 				X int `json:"x"`
@@ -83,26 +82,23 @@ func (e *Engine) handleGMCP(data []byte) {
 					vnum = int(v)
 				}
 			}
-			room := RoomInfo{Vnum: vnum, Name: r.Name}
+			ri := RoomInfo{Vnum: vnum, Name: r.Name}
 			if r.Coords != nil {
-				// Aardwolf coords.x is the north-south axis; swap so our X=EW, Y=NS.
-				room.X, room.Y, room.Z = r.Coords.Y, r.Coords.X, r.Coords.Z
-				room.HasCoords = true
+				// Aardwolf coords.x is north-south; swap so our X=EW, Y=NS.
+				ri.X, ri.Y, ri.Z = r.Coords.Y, r.Coords.X, r.Coords.Z
+				ri.HasCoords = true
 			}
-			e.state.room = room
+			room = e.state.setRoom(ri)
 			sendRoom = true
 		}
 
 	case strings.HasPrefix(msgLower, "room.exits"):
 		var exits map[string]int
 		if err := json.Unmarshal(payload, &exits); err == nil {
-			e.state.room.Exits = exits
+			room = e.state.setRoomExits(exits)
 			sendRoom = true
 		}
 	}
-
-	room := e.state.room
-	e.state.mu.Unlock()
 
 	if sendRoom {
 		select {

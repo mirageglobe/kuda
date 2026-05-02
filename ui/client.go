@@ -9,54 +9,9 @@ import (
 	"github.com/charmbracelet/bubbles/textinput"
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 	"github.com/mirageglobe/kuda/engine"
 	"github.com/muesli/reflow/wordwrap"
 )
-
-// connStatusStr returns a compact status string for active telnet protocol features.
-func connStatusStr(cs ConnStatusInfo) string {
-	var parts []string
-	if cs.GMCPActive {
-		parts = append(parts, "GMCP")
-	}
-	if cs.MCCPActive {
-		parts = append(parts, "MCCP")
-	}
-	if cs.EchoActive {
-		parts = append(parts, "ECHO")
-	}
-	if len(parts) == 0 {
-		return ""
-	}
-	return " │ " + strings.Join(parts, " ")
-}
-
-// formatRawEvent renders a network event as a tagged escaped-byte string for raw mode.
-func formatRawEvent(ev Event) string {
-	var tag string
-	switch ev.Type {
-	case EventText:
-		tag = "[TEXT  ]"
-	case EventGMCP:
-		tag = "[GMCP  ]"
-	case EventTelnetCommand:
-		tag = "[TELNET]"
-	default:
-		tag = "[OTHER ]"
-	}
-	var sb strings.Builder
-	sb.WriteString(tag)
-	sb.WriteByte(' ')
-	for _, b := range ev.Data {
-		if b >= 0x20 && b < 0x7f {
-			sb.WriteByte(b)
-		} else {
-			fmt.Fprintf(&sb, "\\x%02x", b)
-		}
-	}
-	return sb.String()
-}
 
 // ReturnToLauncherMsg signals that the user wants to return to the server list.
 type ReturnToLauncherMsg struct{}
@@ -71,11 +26,8 @@ type ErrorMsg struct {
 	Err error
 }
 
-const mapPanelWidth = 35 // inner width of the right-side map panel
+const mapPanelWidth = 35
 
-var statusHint = hintStyle.Render("[ ?: help · esc: back · ^l: lua · ^p: map · ^r: raw · ^x: reset map · ^c: quit ]")
-
-// sysTick is the message fired by the 1-second system info ticker.
 type sysTick struct{}
 
 func sysTickCmd() tea.Cmd {
@@ -92,13 +44,13 @@ type ClientModel struct {
 	rawMode    bool
 	viewport   viewport.Model
 	input      textinput.Model
-	history    *strings.Builder // raw history with ANSI codes
-	cmdHistory []string         // previously entered commands
-	historyIdx int              // current position in cmdHistory; -1 = not navigating
-	inputDraft string           // saved input before history navigation began
+	history    *strings.Builder
+	cmdHistory []string
+	historyIdx int
+	inputDraft string
 	width      int
 	height     int
-	memMB      uint64 // heap alloc in MB, updated each sysTick
+	memMB      uint64
 }
 
 func NewClientModel(client Connection, state engine.GameState, mapView MapView) ClientModel {
@@ -114,7 +66,6 @@ func NewClientModel(client Connection, state engine.GameState, mapView MapView) 
 		client:     client,
 		engine:     state,
 		mapView:    mapView,
-		showMap:    false,
 		input:      ti,
 		viewport:   vp,
 		history:    &strings.Builder{},
@@ -123,7 +74,7 @@ func NewClientModel(client Connection, state engine.GameState, mapView MapView) 
 }
 
 func (m *ClientModel) viewportHeight() int {
-	h := m.height - 6 // topbar(1) + border top+bottom(2) + status(1) + input(1) + hint(1)
+	h := m.height - 6
 	if h < 1 {
 		h = 1
 	}
@@ -131,9 +82,9 @@ func (m *ClientModel) viewportHeight() int {
 }
 
 func (m *ClientModel) viewportInnerWidth() int {
-	w := m.width - 2 // subtract viewport border
+	w := m.width - 2
 	if m.showMap {
-		w -= mapPanelWidth + 2 // subtract map panel content + its border
+		w -= mapPanelWidth + 2
 	}
 	if w < 1 {
 		w = 1
@@ -145,8 +96,6 @@ func (m *ClientModel) refreshViewport() {
 	if m.width <= 0 {
 		return
 	}
-	// wordwrap.String is ANSI-aware. wrapping ensures colors don't bleed
-	// and text doesn't overflow horizontally.
 	wrapped := wordwrap.String(m.history.String(), m.viewportInnerWidth())
 	m.viewport.SetContent(wrapped)
 	m.viewport.GotoBottom()
@@ -249,11 +198,9 @@ func (m ClientModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			m.historyIdx = -1
 			m.inputDraft = ""
-			// Signal clean disconnect before the server closes on "quit".
 			if strings.EqualFold(strings.TrimSpace(cmd), "quit") {
 				_ = m.client.Close()
 			}
-			// Process command through the engine (aliases/scripting)
 			if err := m.engine.Execute(cmd); err != nil {
 				fmt.Fprintf(m.history, "\n[ ERROR: %v ]\n", err)
 				m.refreshViewport()
@@ -270,7 +217,6 @@ func (m ClientModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.refreshViewport()
 
 	case NetworkEventMsg:
-		// Telnet echo handling applies regardless of raw mode.
 		if msg.Event.Type == EventTelnetCommand && len(msg.Event.Data) >= 2 {
 			cmd, opt := msg.Event.Data[0], msg.Event.Data[1]
 			if opt == TelnetOptEcho {
@@ -284,10 +230,6 @@ func (m ClientModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.rawMode {
 			fmt.Fprintf(m.history, "%s\n", formatRawEvent(msg.Event))
 		} else if msg.Event.Type == EventText {
-			// Most MUDs send \r\n for newlines. Some send \r\x00 for prompts.
-			// By stripping \r and \x00 entirely, we preserve only the \n
-			// which prevents the "double spacing" gap issue caused by
-			// treating \r as a separate newline.
 			text := strings.ReplaceAll(string(msg.Event.Data), "\r", "")
 			text = strings.ReplaceAll(text, "\x00", "")
 			m.history.WriteString(text)
@@ -311,78 +253,4 @@ func (m ClientModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	m.viewport, vpCmd = m.viewport.Update(msg)
 	cmds = append(cmds, tiCmd, vpCmd)
 	return m, tea.Batch(cmds...)
-}
-
-func (m ClientModel) helpView() string {
-	w := m.viewportInnerWidth()
-	sep := strings.Repeat("─", w-2)
-	lines := []string{
-		"",
-		"  keybindings",
-		"  " + sep,
-		"  ?          show / hide this help",
-		"  up / down  command history",
-		"  ctrl+l     toggle lua scripting",
-		"  ctrl+p     toggle map panel",
-		"  ctrl+r     toggle raw mode (debug)",
-		"  ctrl+x     reset map (backs up current map file)",
-		"  esc        return to server list",
-		"  ctrl+c     quit",
-	}
-	h := m.viewportHeight()
-	for len(lines) < h {
-		lines = append(lines, "")
-	}
-	return strings.Join(lines[:h], "\n")
-}
-
-func (m ClientModel) View() string {
-	var pane string
-	if m.showHelp {
-		pane = viewportBorderStyle.Render(m.helpView())
-	} else {
-		pane = viewportBorderStyle.Render(m.viewport.View())
-	}
-
-	// Render Status Bar
-	v := m.engine.Vitals()
-	room := m.engine.Room()
-	name := m.engine.CharName()
-	if name == "" {
-		name = "Connecting..."
-	}
-
-	cs := m.client.ConnStatus()
-	connInfo := connStatusStr(cs)
-	statusBar := fmt.Sprintf(" %s │ ♥ %d/%d │ ◆ %d/%d │ ↑ %d/%d │ %s%s",
-		logoStyle.Render(name),
-		v.HP, v.MaxHP,
-		v.Mana, v.MaxMana,
-		v.Move, v.MaxMove,
-		subtitleStyle.Render(room.Name),
-		hintStyle.Render(connInfo),
-	)
-
-	now := time.Now()
-	topLeft := fmt.Sprintf(" %s %s  %s",
-		logoStyle.Render("kuda"),
-		hintStyle.Render("v"+AppVersion),
-		hintStyle.Render("github.com/mirageglobe/kuda"),
-	)
-	topRight := hintStyle.Render(fmt.Sprintf("%s │ %s │ mem %d MB ",
-		now.Format("2006-01-02"),
-		now.Format("15:04:05"),
-		m.memMB,
-	))
-	topPad := m.width - lipgloss.Width(topLeft) - lipgloss.Width(topRight)
-	if topPad < 0 {
-		topPad = 0
-	}
-	topBar := topLeft + strings.Repeat(" ", topPad) + topRight
-
-	if m.showMap && m.mapView != nil {
-		mapRendered := viewportBorderStyle.Render(m.mapView.Render(mapPanelWidth, m.viewportHeight()))
-		pane = lipgloss.JoinHorizontal(lipgloss.Top, pane, mapRendered)
-	}
-	return fmt.Sprintf("%s\n%s\n%s\n%s\n%s", topBar, pane, statusBar, m.input.View(), statusHint)
 }

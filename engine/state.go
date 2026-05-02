@@ -2,7 +2,6 @@ package engine
 
 import "sync"
 
-// state holds the current world and character state.
 type state struct {
 	mu       sync.RWMutex
 	charName string
@@ -26,4 +25,31 @@ func (s *state) CharName() string {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	return s.charName
+}
+
+func (s *state) setVitals(v VitalsInfo) {
+	s.mu.Lock()
+	s.vitals = v
+	s.mu.Unlock()
+}
+
+func (s *state) setCharName(n string) {
+	s.mu.Lock()
+	s.charName = n
+	s.mu.Unlock()
+}
+
+func (s *state) setRoom(r RoomInfo) RoomInfo {
+	s.mu.Lock()
+	s.room = r
+	s.mu.Unlock()
+	return r
+}
+
+func (s *state) setRoomExits(exits map[string]int) RoomInfo {
+	s.mu.Lock()
+	s.room.Exits = exits
+	r := s.room
+	s.mu.Unlock()
+	return r
 }
