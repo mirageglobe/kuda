@@ -10,6 +10,7 @@ import (
 // ServerSelectedMsg is emitted when the user confirms a server choice.
 // main.go handles this by creating the network client and transitioning to ClientModel.
 type ServerSelectedMsg struct {
+	Name    string
 	Address string
 }
 
@@ -58,7 +59,7 @@ func (m LaunchModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "enter":
 			i := m.list.SelectedItem().(item)
 			m.connecting = true
-			return m, func() tea.Msg { return ServerSelectedMsg{Address: i.desc} }
+			return m, func() tea.Msg { return ServerSelectedMsg{Name: i.title, Address: i.desc} }
 		case "q", "ctrl+c":
 			return m, tea.Quit
 		}
