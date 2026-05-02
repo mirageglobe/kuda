@@ -20,7 +20,4 @@ end
 -- Triggers
 -- onText(line)
 function onText(line)
-    if line:find("You are hungry") then
-        send("eat bread")
-    end
 end
