@@ -260,6 +260,7 @@ make release
 ---
 
 ### near term
+- [ ] `[ui]` disable escape back when in MUD session [easy]
 - [ ] `[ui]` cap scrollback buffer size to prevent unbounded memory growth in long sessions [medium]
 - [ ] `[ui]` do not hide or filter chats etc from main stream for ease of debugging [easy]
 - [ ] `[ui]` hotkey toggle arrow keys for movement [easy]
