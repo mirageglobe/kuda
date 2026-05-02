@@ -17,7 +17,7 @@
 | overall       | 3 / 5 | moderate; multi-package Go with protocol parsing and Lua scripting |
 | network layer | 3 / 5 | telnet state machine, GMCP framing, channel-based i/o          |
 | engine / lua  | 4 / 5 | embedded Lua VM, trigger/alias eval, GMCP-fed state            |
-| ui / tui      | 2 / 5 | standard bubbletea patterns, two simple models                 |
+| ui / tui      | 3 / 5 | mapper panel, raw mode, scrollback, help overlay, cmd history  |
 | mapper        | 3 / 5 | room graph traversal, map rendering                            |
 
 ---
@@ -56,7 +56,8 @@ kuda/
 │   └── state_test.go
 ├── mapper/             # room graph and map rendering
 │   ├── doc.go          # package ownership declaration
-│   └── mapper.go
+│   ├── mapper.go
+│   └── persist.go      # json save/load and backup/reset
 └── ui/                 # bubbletea tui views
     ├── doc.go          # package ownership declaration
     ├── interfaces.go   # Connection interface consumed by ui
@@ -108,6 +109,12 @@ the telnet state machine replies `WONT`/`DONT` to any option it does not explici
 ### feature detection over mud-specific drivers
 kuda uses a common telnet state machine that negotiates capabilities (GMCP, MCCP, TTYPE) rather than using hardcoded "drivers" for different MUDs. reason: the Telnet RFC is designed for feature negotiation; sticking to this allows kuda to be universal while still supporting the advanced features of specific servers. mud-specific logic is handled by reacting to the *protocols* detected (e.g. enabling a mapper when GMCP room data is received).
 
+### adapter.go as explicit wiring layer
+interface adapters (`clientAdapter`, `engineAdapter`, `mockConnection`) live in `adapter.go` rather than `main.go`. reason: `main.go` should only own program startup and model transitions; mixing adapter logic there made the file 300+ lines and obscured the separation between wiring and entry point. adapter.go is the one file allowed to import all packages simultaneously.
+
+### tls opt-in via functional option
+`InsecureSkipVerify` is disabled by default; callers must pass `network.WithInsecureTLS()` explicitly. reason: unconditional certificate bypass is a security smell even for MUD servers; opt-in makes the risk visible at the call site.
+
 ---
 
 ## 6. build & release
@@ -154,7 +161,7 @@ this triggers the workflow which:
 | M1 — minimal viable client | TCP connection, raw stream display, basic input  | complete    |
 | M2 — protocol foundation   | Telnet negotiation (GA/ECHO), MCCP compression   | complete    |
 | M3 — aardwolf protocols    | GMCP parsing + state management, MSP support     | complete    |
-| M4 — extensibility         | Lua scripting, basic mapper                      | in progress |
+| M4 — extensibility         | Lua scripting, basic mapper                      | complete    |
 
 ---
 
@@ -179,6 +186,7 @@ this triggers the workflow which:
 ---
 
 ### near term
+- [ ] `[ui]` cap scrollback buffer size to prevent unbounded memory growth in long sessions [medium]
 - [ ] `[ui]` do not hide or filter chats etc from main stream for ease of debugging [easy]
 - [ ] `[ui]` hotkey toggle arrow keys for movement [easy]
 - [ ] `[ui]` aardwolf allow user to enter quit command. on quit (wait ensure disconnected), and return to main screen. there is bug when entering quit in aardwolf [easy]
@@ -195,7 +203,7 @@ this triggers the workflow which:
 - [ ] `[ui]` add Aardwolf in-game time and date ticker to top bar [medium]
 - [ ] `[ui]` add theming support and theme switcher [medium]
 - [ ] `[engine/ui]` add toggle for showing and editing lua based aliases [medium]
-- [/] establish project structure for engine, network, ui, and mapper packages. [medium]
+- [x] establish project structure for engine, network, ui, and mapper packages. [medium]
 - [ ] `[network/engine/ui]` implement virtual scrollback buffer for performance. toggle for search and scrollback [hard]
 - [ ] `[engine]` add toggle for filtering Aardwolf-specific text tags (e.g., {say}, {affoff}) [easy]
 - [x] `[network]` implement auto-reconnect with configurable backoff [easy]
