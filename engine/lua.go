@@ -12,21 +12,19 @@ import (
 // mu serialises all LState access; LState is not goroutine-safe.
 type ScriptEngine struct {
 	mu     sync.Mutex
-	L      *lua.LState
+	l      *lua.LState
 	engine *Engine
 }
 
 func newScriptEngine(e *Engine) *ScriptEngine {
-	L := lua.NewState()
-	se := &ScriptEngine{L: L, engine: e}
+	l := lua.NewState()
+	se := &ScriptEngine{l: l, engine: e}
 
-	// Register Go functions to Lua
-	L.SetGlobal("send", L.NewFunction(se.luaSend))
+	l.SetGlobal("send", l.NewFunction(se.luaSend))
 
-	// Load user script if it exists
 	if _, err := os.Stat("scripts/init.lua"); err == nil {
-		if err := L.DoFile("scripts/init.lua"); err != nil {
-			fmt.Printf("Lua error: %v\n", err)
+		if err := l.DoFile("scripts/init.lua"); err != nil {
+			fmt.Fprintf(os.Stderr, "Lua error: %v\n", err)
 		}
 	}
 
@@ -36,10 +34,9 @@ func newScriptEngine(e *Engine) *ScriptEngine {
 func (se *ScriptEngine) Close() {
 	se.mu.Lock()
 	defer se.mu.Unlock()
-	se.L.Close()
+	se.l.Close()
 }
 
-// luaSend is exposed to Lua as send(cmd)
 func (se *ScriptEngine) luaSend(L *lua.LState) int {
 	cmd := L.CheckString(1)
 	if err := se.engine.source.Write([]byte(cmd + "\n")); err != nil {
@@ -48,31 +45,29 @@ func (se *ScriptEngine) luaSend(L *lua.LState) int {
 	return 0
 }
 
-// evalAlias evaluates a command through Lua aliases.
-// Returns (modifiedCommand, consumed).
 func (se *ScriptEngine) evalAlias(cmd string) (string, bool) {
 	se.mu.Lock()
 	defer se.mu.Unlock()
-	L := se.L
-	fn := L.GetGlobal("onAlias")
+	l := se.l
+	fn := l.GetGlobal("onAlias")
 	if fn.Type() != lua.LTFunction {
 		return cmd, false
 	}
 
-	err := L.CallByParam(lua.P{
+	err := l.CallByParam(lua.P{
 		Fn:      fn,
 		NRet:    2,
 		Protect: true,
 	}, lua.LString(cmd))
 
 	if err != nil {
-		fmt.Printf("Lua alias error: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Lua alias error: %v\n", err)
 		return cmd, false
 	}
 
-	ret2 := L.Get(-1) // bool: consumed
-	ret1 := L.Get(-2) // string: newCmd
-	L.Pop(2)
+	ret2 := l.Get(-1)
+	ret1 := l.Get(-2)
+	l.Pop(2)
 
 	consumed := false
 	if b, ok := ret2.(lua.LBool); ok {
@@ -86,23 +81,22 @@ func (se *ScriptEngine) evalAlias(cmd string) (string, bool) {
 	return newCmd, consumed
 }
 
-// evalTrigger evaluates a line of text through Lua triggers.
 func (se *ScriptEngine) evalTrigger(line string) {
 	se.mu.Lock()
 	defer se.mu.Unlock()
-	L := se.L
-	fn := L.GetGlobal("onText")
+	l := se.l
+	fn := l.GetGlobal("onText")
 	if fn.Type() != lua.LTFunction {
 		return
 	}
 
-	err := L.CallByParam(lua.P{
+	err := l.CallByParam(lua.P{
 		Fn:      fn,
 		NRet:    0,
 		Protect: true,
 	}, lua.LString(line))
 
 	if err != nil {
-		fmt.Printf("Lua trigger error: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Lua trigger error: %v\n", err)
 	}
 }

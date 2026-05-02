@@ -40,6 +40,13 @@ type Client struct {
 	echoActive  atomic.Bool
 	address     string
 	retry       RetryConfig
+	insecureTLS bool
+}
+
+// WithInsecureTLS disables TLS certificate verification for servers that use
+// self-signed certificates. Only pass this when you control or trust the server.
+func WithInsecureTLS() func(*Client) {
+	return func(c *Client) { c.insecureTLS = true }
 }
 
 // IsMCCPActive reports whether MCCP (zlib compression) is active on this connection.
@@ -52,12 +59,16 @@ func (c *Client) IsGMCPActive() bool { return c.gmcpActive.Load() }
 func (c *Client) IsEchoActive() bool { return c.echoActive.Load() }
 
 // NewClient creates a new network client with default retry settings.
-func NewClient() *Client {
-	return &Client{
+func NewClient(opts ...func(*Client)) *Client {
+	c := &Client{
 		events: make(chan Event, 1024),
 		errors: make(chan error, 10),
 		retry:  DefaultRetry,
 	}
+	for _, o := range opts {
+		o(c)
+	}
+	return c
 }
 
 // newClientWithConn creates a client with a pre-existing connection (for tests).
@@ -98,7 +109,7 @@ func (c *Client) dial() error {
 	if strings.HasPrefix(c.address, "tls://") {
 		cleanAddr := strings.TrimPrefix(c.address, "tls://")
 		conn, err = tls.DialWithDialer(dialer, "tcp", cleanAddr, &tls.Config{
-			InsecureSkipVerify: true, // MUDs commonly use self-signed certs
+			InsecureSkipVerify: c.insecureTLS, //nolint:gosec
 		})
 	} else {
 		conn, err = dialer.Dial("tcp", c.address)
