@@ -135,7 +135,7 @@ make release     # local snapshot build via goreleaser (requires: brew install g
 
 ### publishing a release
 
-releases are automated via goreleaser and GitHub Actions (`.github/workflows/release.yml`). the workflow triggers on any `v*` tag push.
+releases are automated via goreleaser and GitHub Actions (`.github/workflows/release.yml`). the workflow triggers on any `v*` tag push. the homebrew tap is updated manually after each release.
 
 **one-time setup — before first release:**
 
@@ -143,17 +143,86 @@ releases are automated via goreleaser and GitHub Actions (`.github/workflows/rel
 2. generate a GitHub PAT with `repo` write scope for the tap repo.
 3. add the PAT as a repository secret named `HOMEBREW_TAP_GITHUB_TOKEN` in the kuda repo settings (Settings → Secrets → Actions).
 
-**releasing a new version:**
+### prerequisites
+
+- `GITHUB_TOKEN` available in repo secrets (GitHub provides this automatically for Actions)
+
+### version bump guide
+
+| change type                                      | bump    | example         |
+| :----------------------------------------------- | :------ | :-------------- |
+| bug fixes only                                   | patch   | v0.3.0 → v0.3.1 |
+| new user-facing features, no breaking changes    | minor   | v0.3.0 → v0.4.0 |
+| breaking changes to behaviour or config format   | major   | v0.3.0 → v1.0.0 |
+
+### steps
+
+#### phase 1 — prepare changelog (on feature branch)
 
 ```bash
-git tag v0.1.0
-git push origin v0.1.0
+# 1. decide the target version using the bump guide above (e.g. v0.5.0)
+#    decide before editing — the version determines the changelog heading
+
+# 2. update CHANGELOG.md — move [unreleased] items under the new version heading
+#    e.g. ## [v0.5.0] — 2026-05-01
+#    add a fresh empty [unreleased] section at the top for the next cycle
+
+# 3. commit and push the changelog update
+git add CHANGELOG.md && git commit -m "docs: finalize changelog for vX.Y.Z" && git push
+
+# 4. open a PR and merge into main
+```
+
+#### phase 2 — tag and publish (on main)
+
+```bash
+# 5. sync local main after merge
+git checkout main && git pull
+
+# 6. tag the next version — pick one based on the bump guide above
+make bump-patch   # bug fixes only         e.g. v0.3.0 -> v0.3.1
+make bump-minor   # new features           e.g. v0.3.0 -> v0.4.0
+make bump-major   # breaking changes       e.g. v0.3.0 -> v1.0.0
+
+# 7. push the tag to origin — triggers CI to build and publish the GitHub release
+make push-tags
 ```
 
 this triggers the workflow which:
 - cross-compiles for `linux/amd64`, `linux/arm64`, `darwin/amd64`, `darwin/arm64`
 - creates a GitHub release with archives and `checksums.txt`
-- opens a PR against `mirageglobe/homebrew-tap` to update the formula
+
+#### phase 3 — update homebrew tap (after CI completes)
+
+```bash
+# 8. download release assets and compute sha256
+gh release download vX.Y.Z --repo mirageglobe/kuda --dir /tmp/kuda-vX.Y.Z --clobber
+shasum -a 256 /tmp/kuda-vX.Y.Z/*
+
+# 9. update homebrew-tap/Formula/kuda.rb with new version, urls, and sha256 values
+
+# 10. commit and push the tap update
+git add Formula/kuda.rb && git commit -m "feat: update kuda to vX.Y.Z" && git push
+```
+
+### local validation (optional)
+
+```bash
+make release-dry   # dry-run via goreleaser: builds binaries and archives locally, no publish
+```
+
+### troubleshooting
+
+**release fails with `422 Validation Failed — tag_name already_exists`**
+
+this happens when a previous goreleaser run partially created a GitHub release for the same tag (e.g. interrupted mid-upload). goreleaser cannot overwrite an existing release.
+
+fix: delete the partial release(s) and re-run:
+
+```bash
+make release-reset   # deletes any existing GitHub release for the current tag
+make release
+```
 
 ---
 
