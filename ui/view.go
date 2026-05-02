@@ -122,5 +122,9 @@ func (m ClientModel) View() string {
 		mapRendered := viewportBorderStyle.Render(m.mapView.Render(mapPanelWidth, m.viewportHeight()))
 		pane = lipgloss.JoinHorizontal(lipgloss.Top, pane, mapRendered)
 	}
-	return fmt.Sprintf("%s\n%s\n%s\n%s\n%s", topBar, pane, statusBar, m.input.View(), statusHint)
+	hint := statusHint
+	if m.confirmResetMap {
+		hint = hintStyle.Render("[ reset map? all rooms will be lost — y to confirm, any other key to cancel ]")
+	}
+	return fmt.Sprintf("%s\n%s\n%s\n%s\n%s", topBar, pane, statusBar, m.input.View(), hint)
 }
