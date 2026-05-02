@@ -115,6 +115,11 @@ interface adapters (`clientAdapter`, `engineAdapter`, `mockConnection`) live in 
 ### tls opt-in via functional option
 `InsecureSkipVerify` is disabled by default; callers must pass `network.WithInsecureTLS()` explicitly. reason: unconditional certificate bypass is a security smell even for MUD servers; opt-in makes the risk visible at the call site.
 
+### aardwolf GMCP Room.Info conventions
+Aardwolf embeds exits inline inside `Room.Info` JSON (`"exits": {"n": 12345, ...}`) rather than sending a separate `Room.Exits` message. `gmcp.go` parses exits from `Room.Info` directly. A separate `Room.Exits` message is also handled for servers that send it independently.
+
+Aardwolf coordinate axes are non-standard: `coords.x` = north-south, `coords.y` = east-west. `gmcp.go` swaps them on ingestion so the mapper's internal convention is always `X=EW, Y=NS` (standard cartesian). Direction keys in exits are abbreviated at the GMCP boundary (`"north"` → `"n"`) so the mapper's `dirDelta` table matches without special-casing.
+
 ---
 
 ## 6. build & release
