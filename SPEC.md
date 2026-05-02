@@ -120,6 +120,18 @@ Aardwolf embeds exits inline inside `Room.Info` JSON (`"exits": {"n": 12345, ...
 
 Aardwolf coordinate axes are non-standard: `coords.x` = north-south, `coords.y` = east-west. `gmcp.go` swaps them on ingestion so the mapper's internal convention is always `X=EW, Y=NS` (standard cartesian). Direction keys in exits are abbreviated at the GMCP boundary (`"north"` → `"n"`) so the mapper's `dirDelta` table matches without special-casing.
 
+### aardwolf character conventions
+
+| Character | Role | Context |
+| :--- | :--- | :--- |
+| `@` | **Protected** | color codes (e.g. `@R` for red), must use `@@` for literal |
+| `#` | Common | client-side speedwalking and client commands (MUSHclient) |
+| `/` | Common | socials and client-side command prefixes |
+| `!` | Standard | repeat last command |
+| `.` | Standard | item indexing (e.g. `get 2.sword`) |
+| `{` | System | used for Aardwolf-specific state tags (e.g. `{say}`) |
+| `~` | Special | used in some internal string delimiters |
+
 ---
 
 ## 6. build & release
@@ -260,6 +272,9 @@ make release
 ---
 
 ### near term
+- [ ] `[ui]` implement command mode triggered by "/" (e.g. /help, /map, /raw, /quit) [medium]
+- [ ] `[ui]` implement buffer lock for scrolling to buffer history [medium]
+- [ ] `[ui]` implement navigation lock for using arrow keys to move [medium]
 - [ ] `[ui]` disable escape back when in MUD session [easy]
 - [ ] `[ui]` cap scrollback buffer size to prevent unbounded memory growth in long sessions [medium]
 - [ ] `[ui]` do not hide or filter chats etc from main stream for ease of debugging [easy]
