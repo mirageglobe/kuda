@@ -36,7 +36,7 @@ all: build                                              ## default to building t
 
 build: tidy fmt                                         ## build the Kuda binary
 	@printf "==> Building $(BINARY_NAME) $(VERSION)...\n"
-	@go build $(LDFLAGS) -o $(BIN_DIR)/$(BINARY_NAME) ./main.go
+	@go build $(LDFLAGS) -o $(BIN_DIR)/$(BINARY_NAME) .
 
 run: build                                              ## build and run Kuda
 	@./$(BIN_DIR)/$(BINARY_NAME)
