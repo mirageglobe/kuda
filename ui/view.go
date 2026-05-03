@@ -86,9 +86,6 @@ func (m ClientModel) View() string {
 	v := m.engine.Vitals()
 	room := m.engine.Room()
 	name := m.engine.CharName()
-	if name == "" {
-		name = "Connecting..."
-	}
 
 	cs := m.client.ConnStatus()
 	connInfo := connStatusStr(cs)
