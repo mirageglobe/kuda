@@ -272,6 +272,8 @@ make release
 ---
 
 ### near term
+- [ ] `[mapper]` implement multilevel map support (Z-axis filtering and vertical exits) [medium]
+- [ ] `[mapper]` handle special rooms (magic, clan, no-coord) via zone-based partitioning [medium]
 - [ ] `[ui]` implement command mode triggered by "/" (e.g. /help, /map, /raw, /quit) [medium]
 - [ ] `[ui]` implement buffer lock for scrolling to buffer history [medium]
 - [ ] `[ui]` implement navigation lock for using arrow keys to move [medium]
