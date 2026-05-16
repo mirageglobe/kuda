@@ -31,6 +31,8 @@ type GameState interface {
 	Execute(cmd string) error
 	// ToggleLua enables or disables the script engine. Returns the new state.
 	ToggleLua() bool
+	// LuaActive returns whether the script engine is currently enabled.
+	LuaActive() bool
 	// Room returns current room details.
 	Room() RoomInfo
 	// Vitals returns current player character vitals.

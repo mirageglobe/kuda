@@ -28,19 +28,23 @@ type ErrorMsg struct {
 
 const mapPanelWidth = 35
 
-var clientCmds = []string{"/clear", "/help", "/map", "/quit", "/raw"}
+var clientCmds = []string{"/clear", "/help", "/lua", "/map", "/map reset", "/quit", "/raw"}
+var launchCmds = []string{"/filter", "/quit"}
 
-func completionMatch(input string) string {
+func matchCmd(cmds []string, input string) string {
 	if !strings.HasPrefix(input, "/") || input == "/" {
 		return ""
 	}
-	for _, c := range clientCmds {
+	for _, c := range cmds {
 		if strings.HasPrefix(c, input) && c != input {
 			return c
 		}
 	}
 	return ""
 }
+
+func completionMatch(input string) string       { return matchCmd(clientCmds, input) }
+func launchCompletionMatch(input string) string { return matchCmd(launchCmds, input) }
 
 type sysTick struct{}
 
@@ -53,6 +57,7 @@ type ClientModel struct {
 	client          Connection
 	engine          engine.GameState
 	mapView         MapView
+	serverName      string
 	showMap         bool
 	showHelp        bool
 	rawMode         bool
@@ -63,14 +68,15 @@ type ClientModel struct {
 	cmdHistory      []string
 	historyIdx      int
 	inputDraft      string
+	warnMsg         string
 	width           int
 	height          int
 	memMB           uint64
 }
 
-func NewClientModel(client Connection, state engine.GameState, mapView MapView) ClientModel {
+func NewClientModel(client Connection, state engine.GameState, mapView MapView, serverName string) ClientModel {
 	ti := textinput.New()
-	ti.Prompt = "kuda > "
+	ti.Prompt = "❯ "
 	ti.Placeholder = "type a command..."
 	ti.Focus()
 
@@ -81,6 +87,7 @@ func NewClientModel(client Connection, state engine.GameState, mapView MapView) 
 		client:     client,
 		engine:     state,
 		mapView:    mapView,
+		serverName: serverName,
 		input:      ti,
 		viewport:   vp,
 		history:    &strings.Builder{},
@@ -89,7 +96,7 @@ func NewClientModel(client Connection, state engine.GameState, mapView MapView) 
 }
 
 func (m *ClientModel) viewportHeight() int {
-	h := m.height - 7
+	h := m.height - 6
 	if h < 1 {
 		h = 1
 	}
@@ -147,6 +154,10 @@ func (m ClientModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
+		if m.showHelp && msg.Type != tea.KeyCtrlC {
+			m.showHelp = false
+			return m, nil
+		}
 		if m.confirmResetMap {
 			if msg.String() == "y" || msg.String() == "Y" {
 				backup, err := m.mapView.Reset()
@@ -165,23 +176,6 @@ func (m ClientModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg.Type {
 		case tea.KeyCtrlC:
 			return m, tea.Quit
-		case tea.KeyCtrlL:
-			m.engine.ToggleLua()
-			return m, nil
-		case tea.KeyCtrlP:
-			m.showMap = !m.showMap
-			m.viewport.Width = m.viewportInnerWidth()
-			m.viewport.Height = m.viewportHeight()
-			m.refreshViewport()
-			return m, nil
-		case tea.KeyCtrlR:
-			m.rawMode = !m.rawMode
-			return m, nil
-		case tea.KeyCtrlX:
-			if m.mapView != nil {
-				m.confirmResetMap = true
-			}
-			return m, nil
 		case tea.KeyTab:
 			if match := completionMatch(m.input.Value()); match != "" {
 				m.input.SetValue(match)
@@ -226,6 +220,7 @@ func (m ClientModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			m.historyIdx = -1
 			m.inputDraft = ""
+			m.warnMsg = ""
 			if strings.HasPrefix(cmd, "/") {
 				m.handleClientCmd(strings.TrimSpace(cmd))
 			} else {
@@ -238,6 +233,7 @@ func (m ClientModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 			}
 			m.input.SetValue("")
+			return m, nil
 		}
 
 	case tea.WindowSizeMsg:
@@ -295,8 +291,18 @@ func (m *ClientModel) handleClientCmd(cmd string) {
 	switch parts[0] {
 	case "/help":
 		m.showHelp = !m.showHelp
+		m.refreshViewport()
+	case "/lua":
+		m.engine.ToggleLua()
 	case "/map":
 		m.showMap = !m.showMap
+		m.viewport.Width = m.viewportInnerWidth()
+		m.viewport.Height = m.viewportHeight()
+		m.refreshViewport()
+	case "/map reset":
+		if m.mapView != nil {
+			m.confirmResetMap = true
+		}
 	case "/raw":
 		m.rawMode = !m.rawMode
 	case "/quit":
@@ -305,7 +311,6 @@ func (m *ClientModel) handleClientCmd(cmd string) {
 		m.history.Reset()
 		m.refreshViewport()
 	default:
-		fmt.Fprintf(m.history, "\n[ unknown command: %s ]\n", parts[0])
-		m.refreshViewport()
+		m.warnMsg = "unknown command " + parts[0]
 	}
 }

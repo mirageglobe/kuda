@@ -2,8 +2,10 @@ package ui
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/charmbracelet/bubbles/list"
+	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 )
 
@@ -29,8 +31,10 @@ func (i item) FilterValue() string { return i.title }
 
 type LaunchModel struct {
 	list       list.Model
+	input      textinput.Model
 	errMsg     string
 	connecting bool
+	width      int
 }
 
 // MockAddress is the sentinel address that triggers the in-process echo connection.
@@ -43,11 +47,18 @@ func NewLaunchModel() LaunchModel {
 		items[i] = item{title: s.Name, desc: s.Address}
 	}
 	l := list.New(items, list.NewDefaultDelegate(), 0, 0)
-	l.Title = "Select a MUD"
-	return LaunchModel{list: l}
+	l.SetShowTitle(false)
+	l.SetFilteringEnabled(false)
+
+	ti := textinput.New()
+	ti.Prompt = "❯ "
+	ti.Placeholder = "/filter  /quit"
+	ti.Focus()
+
+	return LaunchModel{list: l, input: ti}
 }
 
-func (m LaunchModel) Init() tea.Cmd { return nil }
+func (m LaunchModel) Init() tea.Cmd { return textinput.Blink }
 
 func (m LaunchModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
@@ -56,38 +67,87 @@ func (m LaunchModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 		switch msg.String() {
+		case "up", "down":
+			var listCmd tea.Cmd
+			m.list, listCmd = m.list.Update(msg)
+			return m, listCmd
+		case "tab":
+			if match := launchCompletionMatch(m.input.Value()); match != "" {
+				m.input.SetValue(match)
+				m.input.CursorEnd()
+			}
+			return m, nil
 		case "enter":
+			cmd := strings.TrimSpace(m.input.Value())
+			if strings.HasPrefix(cmd, "/") {
+				m.input.SetValue("")
+				m.errMsg = ""
+				parts := strings.Fields(cmd)
+				switch parts[0] {
+				case "/quit":
+					return m, tea.Quit
+				case "/filter":
+					term := ""
+					if len(parts) > 1 {
+						term = strings.ToLower(strings.Join(parts[1:], " "))
+					}
+					all := GetServers()
+					filtered := make([]list.Item, 0, len(all))
+					for _, s := range all {
+						if term == "" || strings.Contains(strings.ToLower(s.Name), term) || strings.Contains(strings.ToLower(s.Address), term) {
+							filtered = append(filtered, item{title: s.Name, desc: s.Address})
+						}
+					}
+					m.list.SetItems(filtered)
+				default:
+					m.errMsg = fmt.Sprintf("unknown command: %s", parts[0])
+				}
+				return m, nil
+			}
 			i := m.list.SelectedItem().(item)
 			m.connecting = true
 			return m, func() tea.Msg { return ServerSelectedMsg{Name: i.title, Address: i.desc} }
-		case "q", "ctrl+c":
+		case "ctrl+c":
 			return m, tea.Quit
 		}
 	case ConnectErrorMsg:
 		m.connecting = false
-		m.errMsg = fmt.Sprintf("[ ERROR: %v ]", msg.Err)
+		m.errMsg = fmt.Sprintf("error: %v", msg.Err)
 		return m, nil
 	case tea.WindowSizeMsg:
-		m.list.SetSize(msg.Width, msg.Height-3)
+		m.width = msg.Width
+		m.input.Width = msg.Width
+		// reserve: topbar + border(2) + label + input + hint = 6
+		m.list.SetSize(msg.Width-2, msg.Height-6)
 		return m, nil
 	}
-	var cmd tea.Cmd
-	m.list, cmd = m.list.Update(msg)
-	return m, cmd
+	var tiCmd tea.Cmd
+	m.input, tiCmd = m.input.Update(msg)
+	return m, tiCmd
 }
+
+var launchHint = hintStyle.Render("[ ↑↓: navigate · enter: connect · /quit · ^c: quit ]")
 
 func (m LaunchModel) View() string {
 	m.list.SetShowHelp(false)
-	lView := m.list.View()
+	topBar := renderTopBar(m.width, "launch", "")
 
-	var status string
-	if m.connecting {
-		status = hintStyle.Render("Connecting...")
-	} else if m.errMsg != "" {
-		status = m.errMsg
+	var labelText, labelWarn string
+	switch {
+	case m.connecting:
+		labelText = "connecting..."
+	case m.errMsg != "":
+		labelWarn = m.errMsg
+	default:
+		labelText = "select a mud"
+	}
+	label := renderKudaLabel(labelText, labelWarn)
+
+	bottom := launchHint
+	if suggestion := launchCompletionMatch(m.input.Value()); suggestion != "" {
+		bottom = hintStyle.Render("  tab → " + suggestion)
 	}
 
-	// Always reserve 2 lines for status (one for content, one for spacing)
-	// and 1 line for help. Total 3 lines reserved in SetSize.
-	return fmt.Sprintf("%s\n\n%s\n%s", lView, status, m.list.Help.View(m.list))
+	body := viewportBorderStyle.Width(m.width - 2).Render(m.list.View())
+	return fmt.Sprintf("%s\n%s\n%s\n%s\n%s", topBar, body, label, m.input.View(), bottom)
 }

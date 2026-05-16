@@ -38,6 +38,8 @@ func (e *Engine) ToggleLua() bool {
 	return e.luaEnabled
 }
 
+func (e *Engine) LuaActive() bool { return e.luaEnabled }
+
 // Execute runs a command through the alias engine and sends it to the server.
 func (e *Engine) Execute(cmd string) error {
 	if e.luaEnabled {
