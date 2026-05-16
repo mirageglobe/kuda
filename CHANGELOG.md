@@ -8,23 +8,24 @@ versions follow [semantic versioning](https://semver.org/).
 
 ## [unreleased]
 
-### added
-- `AGENTS.md` with ai assistant guidelines for this project
-- `SPEC.md` with project specification and architecture
-- `CHANGELOG.md` (this file)
-- `GEMINI.md` and `CLAUDE.md` symlinks pointing to `AGENTS.md`
-- `Makefile` for building and testing
-- `Brewfile` with project dependencies
-- basic project structure in root folder
-
 ---
 
-## [v0.1.0] — 2026-04-24
+## [v0.1.0] — 2026-05-16
 
 ### added
 - initial project setup for go-based mud client
-- `.gitignore` for binaries and common temporary files
+- bubbletea tui with splash, launch, and session screens
+- telnet + gmcp + mccp network layer
+- lua scripting engine with alias and trigger support
+- aardwolf gmcp parser (vitals, room, char name)
+- map panel with ascii room graph and auto-discovery
+- `AGENTS.md`, `SPEC.md`, `CHANGELOG.md`, `Makefile`, `Brewfile`
+- goreleaser config with homebrew tap support
 
 ### changed
-- moved source files from `src/` to root for idiomatic go structure
-- cleaned up legacy references to hugo and mapping tools
+- all ctrl+ hotkeys replaced with `/` commands (`/map`, `/map reset`, `/lua`, `/raw`)
+- `❯` prompt glyph on all text inputs
+- `◈` glyph label above input; shows `[warn]` in red on error
+- session status bar: vitals + map/raw/lua toggle indicators right-aligned
+- launch screen: rounded border on server list, full width
+- help panel: any key dismisses; consolidated keybinding list
