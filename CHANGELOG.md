@@ -10,6 +10,15 @@ versions follow [semantic versioning](https://semver.org/).
 
 ---
 
+## [v0.2.0] — 2026-05-16
+
+### added
+- stats display with session counters
+- confirm flows for destructive actions
+- ui polish pass
+
+---
+
 ## [v0.1.0] — 2026-05-16
 
 ### added
