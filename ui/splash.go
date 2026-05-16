@@ -17,17 +17,21 @@ const asciiLogo = ` _  ___   _ ___   _
 type SplashModel struct {
 	width  int
 	height int
+	stats  statsInfo
 }
 
 func NewSplashModel() SplashModel { return SplashModel{} }
 
-func (m SplashModel) Init() tea.Cmd { return nil }
+func (m SplashModel) Init() tea.Cmd { return sysTickCmd() }
 
 func (m SplashModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.width, m.height = msg.Width, msg.Height
 		return m, nil
+	case sysTick:
+		m.stats = m.stats.update()
+		return m, sysTickCmd()
 	case tea.KeyMsg:
 		if msg.String() == "ctrl+c" {
 			return m, tea.Quit
@@ -38,7 +42,7 @@ func (m SplashModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m SplashModel) View() string {
-	topBar := renderTopBar(m.width, "splash", "")
+	topBar := renderTopBar(m.width, "splash", "", m.stats.String())
 	content := logoStyle.Render(asciiLogo) +
 		"\n\n" + subtitleStyle.Render("a modern mud client") +
 		"\n\n" + hintStyle.Render("press any key")

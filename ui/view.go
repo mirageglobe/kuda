@@ -117,18 +117,24 @@ func (m ClientModel) View() string {
 	)
 
 	now := time.Now()
-	pageLabel := fmt.Sprintf("session │ %s │ %s │ mem %d MB ",
-		now.Format("2006-01-02"),
-		now.Format("15:04:05"),
-		m.memMB,
-	)
-	topBar := renderTopBar(m.width, pageLabel, m.serverName)
+	pageLabel := fmt.Sprintf("session │ %s │ %s", now.Format("2006-01-02"), now.Format("15:04:05"))
+	topBar := renderTopBar(m.width, pageLabel, m.serverName, m.stats.String())
 
 	if m.showMap && m.mapView != nil {
 		mapRendered := viewportBorderStyle.Render(m.mapView.Render(mapPanelWidth, m.viewportHeight()))
 		pane = lipgloss.JoinHorizontal(lipgloss.Top, pane, mapRendered)
 	}
-	left := renderKudaLabel("", m.warnMsg)
+	var left string
+	switch {
+	case m.pendingConfirm == "esc":
+		left = renderKudaLabel("", "return to launcher? y to confirm, any other key to cancel")
+	case m.pendingConfirm == "quit":
+		left = renderKudaLabel("", "quit? y to confirm, any other key to cancel")
+	case m.confirmResetMap:
+		left = renderKudaLabel("", "reset map? all rooms will be lost — y to confirm, any other key to cancel")
+	default:
+		left = renderKudaLabel("", m.warnMsg)
+	}
 	pad := m.width - lipgloss.Width(left) - lipgloss.Width(vitals)
 	if pad < 0 {
 		pad = 0
@@ -136,9 +142,7 @@ func (m ClientModel) View() string {
 	statusLine := left + strings.Repeat(" ", pad) + vitals
 
 	bottom := statusHint
-	if m.confirmResetMap {
-		bottom = hintStyle.Render("[ reset map? all rooms will be lost — y to confirm, any other key to cancel ]")
-	} else if suggestion := completionMatch(m.input.Value()); suggestion != "" {
+	if suggestion := completionMatch(m.input.Value()); suggestion != "" {
 		bottom = hintStyle.Render("  tab → " + suggestion)
 	}
 	return fmt.Sprintf("%s\n%s\n%s\n%s\n%s", topBar, pane, statusLine, m.input.View(), bottom)
