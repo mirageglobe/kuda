@@ -38,12 +38,16 @@ func (m SplashModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m SplashModel) View() string {
+	topBar := renderTopBar(m.width, "splash", "")
 	content := logoStyle.Render(asciiLogo) +
 		"\n\n" + subtitleStyle.Render("a modern mud client") +
 		"\n\n" + hintStyle.Render("press any key")
 
+	var body string
 	if m.width > 0 && m.height > 0 {
-		return lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center, content)
+		body = lipgloss.Place(m.width, m.height-1, lipgloss.Center, lipgloss.Center, content)
+	} else {
+		body = content
 	}
-	return content
+	return topBar + "\n" + body
 }

@@ -1,9 +1,11 @@
 package main
 
 import (
+	"math/rand"
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/mirageglobe/kuda/engine"
@@ -133,9 +135,23 @@ func (e *engineAdapter) Write(data []byte) error       { return e.conn.Write(dat
 
 // ── mockConnection ────────────────────────────────────────────────────────────
 
+var mockLines = []string{
+	"A rat scurries past your feet.\r\n",
+	"You hear the distant clash of swords.\r\n",
+	"The wind howls through a crack in the wall.\r\n",
+	"A guard glances at you suspiciously.\r\n",
+	"Someone in the distance shouts for help.\r\n",
+	"The torchlight flickers.\r\n",
+	"You smell something foul nearby.\r\n",
+	"A merchant calls out, peddling wares.\r\n",
+	"The ground trembles faintly beneath you.\r\n",
+	"An owl hoots somewhere in the darkness.\r\n",
+}
+
 type mockConnection struct {
 	events chan ui.Event
 	errors chan error
+	done   chan struct{}
 }
 
 var _ ui.Connection = (*mockConnection)(nil)
@@ -144,12 +160,27 @@ func newMockConnection() *mockConnection {
 	m := &mockConnection{
 		events: make(chan ui.Event, 100),
 		errors: make(chan error, 10),
+		done:   make(chan struct{}),
 	}
 	m.events <- ui.Event{
 		Type: ui.EventText,
 		Data: []byte("[ kuda dev — local echo mode ]\r\nType anything and press Enter.\r\n\r\n"),
 	}
+	go m.ticker()
 	return m
+}
+
+func (m *mockConnection) ticker() {
+	for {
+		delay := time.Duration(3+rand.Intn(7)) * time.Second
+		select {
+		case <-m.done:
+			return
+		case <-time.After(delay):
+			line := mockLines[rand.Intn(len(mockLines))]
+			m.events <- ui.Event{Type: ui.EventText, Data: []byte(line)}
+		}
+	}
 }
 
 func (m *mockConnection) Write(data []byte) error {
@@ -160,7 +191,7 @@ func (m *mockConnection) Write(data []byte) error {
 
 func (m *mockConnection) EventsCh() <-chan ui.Event     { return m.events }
 func (m *mockConnection) ErrorsCh() <-chan error        { return m.errors }
-func (m *mockConnection) Close() error                  { return nil }
+func (m *mockConnection) Close() error                  { close(m.done); return nil }
 func (m *mockConnection) ConnStatus() ui.ConnStatusInfo { return ui.ConnStatusInfo{} }
 
 // ── wiring helpers ────────────────────────────────────────────────────────────

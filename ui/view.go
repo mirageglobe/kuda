@@ -8,7 +8,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-var statusHint = hintStyle.Render("[ ?: help · esc: back · ^l: lua · ^p: map · ^r: raw · ^x: reset map · ^c: quit ]")
+var statusHint = hintStyle.Render("[ ?: help · esc: return to launch ]")
 
 func connStatusStr(cs ConnStatusInfo) string {
 	var parts []string
@@ -61,20 +61,18 @@ func (m ClientModel) helpView() string {
 		"  " + sep,
 		"  ?          show / hide this help",
 		"  up / down  command history",
-		"  ctrl+l     toggle lua scripting",
-		"  ctrl+p     toggle map panel",
-		"  ctrl+r     toggle raw mode (debug)",
-		"  ctrl+x     reset map (backs up current map file)",
 		"  esc        return to server list",
 		"  ctrl+c     quit",
 		"",
-		"  client commands",
+		"  commands",
 		"  " + sep,
-		"  /clear     clear scrollback buffer",
-		"  /help      show / hide this help",
-		"  /map       toggle map panel",
-		"  /quit      disconnect and return to server list",
-		"  /raw       toggle raw debug mode",
+		"  /clear      clear scrollback buffer",
+		"  /help       show / hide this help",
+		"  /lua        toggle lua scripting",
+		"  /map        toggle map panel",
+		"  /map reset  reset map (backs up current map file)",
+		"  /quit       disconnect and return to server list",
+		"  /raw        toggle raw debug mode",
 	}
 	h := m.viewportHeight()
 	for len(lines) < h {
@@ -97,44 +95,51 @@ func (m ClientModel) View() string {
 
 	cs := m.client.ConnStatus()
 	connInfo := connStatusStr(cs)
-	statusBar := fmt.Sprintf(" %s │ ♥ %d/%d │ ◆ %d/%d │ ↑ %d/%d │ %s%s",
+
+	toggleStr := func(label string, active bool) string {
+		if active {
+			return toggleActiveStyle.Render(label)
+		}
+		return toggleInactiveStyle.Render(label)
+	}
+	toggles := toggleStr("map", m.showMap) + " " +
+		toggleStr("raw", m.rawMode) + " " +
+		toggleStr("lua", m.engine.LuaActive()) + " "
+
+	vitals := fmt.Sprintf("%s │ ♥ %d/%d │ ◆ %d/%d │ ↑ %d/%d │ %s%s │ %s",
 		logoStyle.Render(name),
 		v.HP, v.MaxHP,
 		v.Mana, v.MaxMana,
 		v.Move, v.MaxMove,
 		subtitleStyle.Render(room.Name),
 		hintStyle.Render(connInfo),
+		toggles,
 	)
 
 	now := time.Now()
-	topLeft := fmt.Sprintf(" %s %s  %s",
-		logoStyle.Render("kuda"),
-		hintStyle.Render("v"+AppVersion),
-		hintStyle.Render("github.com/mirageglobe/kuda"),
-	)
-	topRight := hintStyle.Render(fmt.Sprintf("%s │ %s │ mem %d MB ",
+	pageLabel := fmt.Sprintf("session │ %s │ %s │ mem %d MB ",
 		now.Format("2006-01-02"),
 		now.Format("15:04:05"),
 		m.memMB,
-	))
-	topPad := m.width - lipgloss.Width(topLeft) - lipgloss.Width(topRight)
-	if topPad < 0 {
-		topPad = 0
-	}
-	topBar := topLeft + strings.Repeat(" ", topPad) + topRight
+	)
+	topBar := renderTopBar(m.width, pageLabel, m.serverName)
 
 	if m.showMap && m.mapView != nil {
 		mapRendered := viewportBorderStyle.Render(m.mapView.Render(mapPanelWidth, m.viewportHeight()))
 		pane = lipgloss.JoinHorizontal(lipgloss.Top, pane, mapRendered)
 	}
-	hint := statusHint
+	left := renderKudaLabel("", m.warnMsg)
+	pad := m.width - lipgloss.Width(left) - lipgloss.Width(vitals)
+	if pad < 0 {
+		pad = 0
+	}
+	statusLine := left + strings.Repeat(" ", pad) + vitals
+
+	bottom := statusHint
 	if m.confirmResetMap {
-		hint = hintStyle.Render("[ reset map? all rooms will be lost — y to confirm, any other key to cancel ]")
+		bottom = hintStyle.Render("[ reset map? all rooms will be lost — y to confirm, any other key to cancel ]")
+	} else if suggestion := completionMatch(m.input.Value()); suggestion != "" {
+		bottom = hintStyle.Render("  tab → " + suggestion)
 	}
-	suggestion := completionMatch(m.input.Value())
-	suggestionLine := hintStyle.Render("  tab → " + suggestion)
-	if suggestion == "" {
-		suggestionLine = ""
-	}
-	return fmt.Sprintf("%s\n%s\n%s\n%s\n%s\n%s", topBar, pane, statusBar, m.input.View(), suggestionLine, hint)
+	return fmt.Sprintf("%s\n%s\n%s\n%s\n%s", topBar, pane, statusLine, m.input.View(), bottom)
 }

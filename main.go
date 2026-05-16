@@ -61,7 +61,7 @@ func (m rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.conn = conn
 			m.engine = engine.NewEngine(newEngineAdapter(conn))
 			go watchRooms(m.engine, m.mapper)
-			next := ui.NewClientModel(conn, m.engine, m.mapper)
+			next := ui.NewClientModel(conn, m.engine, m.mapper, msg.Name)
 			m.current = next
 			return m, tea.Batch(next.Init(), func() tea.Msg {
 				return tea.WindowSizeMsg{Width: m.width, Height: m.height}
@@ -80,7 +80,7 @@ func (m rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.conn = msg.adapter
 		m.engine = engine.NewEngine(newEngineAdapter(msg.adapter))
 		go watchRooms(m.engine, m.mapper)
-		next := ui.NewClientModel(msg.adapter, m.engine, m.mapper)
+		next := ui.NewClientModel(msg.adapter, m.engine, m.mapper, m.pendingServerName)
 		m.current = next
 		return m, tea.Batch(next.Init(), func() tea.Msg {
 			return tea.WindowSizeMsg{Width: m.width, Height: m.height}
