@@ -274,6 +274,7 @@ make release
 ### near term
 - [ ] `[mapper]` implement multilevel map support (Z-axis filtering and vertical exits) [medium]
 - [ ] `[mapper]` handle special rooms (magic, clan, no-coord) via zone-based partitioning [medium]
+- [ ] `[ui]` move gmcp and mccp status text to beginning of line [easy]
 - [ ] `[ui]` implement command mode triggered by "/" (e.g. /help, /map, /raw, /quit) [medium]
 - [ ] `[ui]` implement buffer lock for scrolling to buffer history [medium]
 - [ ] `[ui]` implement navigation lock for using arrow keys to move [medium]
@@ -287,6 +288,7 @@ make release
 - [ ] `[network]` add MSP (MUD Sound Protocol) support [medium]
 - [ ] `[engine/ui]` add support for user-defined hotkeys/aliases via Lua [medium]
 - [ ] `[ui]` implement layered input manager to handle keybinding/command conflicts [medium]
+- [ ] `[ui]` autofill commands with tab completion in the input bar [easy]
 - [ ] `[ui]` add search feature to scrollback buffer [medium]
 - [ ] `[engine/ui]` implement regex-based line diversion (combat/spells/chat) [medium]
 - [ ] `[engine/ui]` add event-driven spell/buff dashboard [medium]
