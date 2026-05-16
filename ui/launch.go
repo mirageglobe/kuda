@@ -35,6 +35,7 @@ type LaunchModel struct {
 	errMsg     string
 	connecting bool
 	width      int
+	stats      statsInfo
 }
 
 // MockAddress is the sentinel address that triggers the in-process echo connection.
@@ -58,7 +59,7 @@ func NewLaunchModel() LaunchModel {
 	return LaunchModel{list: l, input: ti}
 }
 
-func (m LaunchModel) Init() tea.Cmd { return textinput.Blink }
+func (m LaunchModel) Init() tea.Cmd { return tea.Batch(textinput.Blink, sysTickCmd()) }
 
 func (m LaunchModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
@@ -110,6 +111,9 @@ func (m LaunchModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "ctrl+c":
 			return m, tea.Quit
 		}
+	case sysTick:
+		m.stats = m.stats.update()
+		return m, sysTickCmd()
 	case ConnectErrorMsg:
 		m.connecting = false
 		m.errMsg = fmt.Sprintf("error: %v", msg.Err)
@@ -130,7 +134,7 @@ var launchHint = hintStyle.Render("[ ↑↓: navigate · enter: connect · /quit
 
 func (m LaunchModel) View() string {
 	m.list.SetShowHelp(false)
-	topBar := renderTopBar(m.width, "launch", "")
+	topBar := renderTopBar(m.width, "launch", "", m.stats.String())
 
 	var labelText, labelWarn string
 	switch {

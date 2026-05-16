@@ -23,7 +23,7 @@ var (
 
 // renderKudaLabel renders "  kuda : <text>" — optionally prefixed with "[warn] " in red.
 func renderKudaLabel(text, warn string) string {
-	glyph := logoStyle.Render("◈")
+	glyph := logoStyle.Render("⧫")
 	if warn != "" {
 		return glyph + " " + errorStyle.Render("[warn] ") + subtitleStyle.Render(warn)
 	}
@@ -34,12 +34,12 @@ func renderKudaLabel(text, warn string) string {
 }
 
 // renderTopBar returns a full-width top bar: left shows kuda/version/mud, right shows page name.
-func renderTopBar(width int, page, mud string) string {
-	left := " " + logoStyle.Render("kuda") + "  " + hintStyle.Render("v"+AppVersion)
+func renderTopBar(width int, page, mud, stats string) string {
+	left := " " + logoStyle.Render("kuda") + "  " + hintStyle.Render(AppVersion)
 	if mud != "" {
 		left += "  " + hintStyle.Render(mud)
 	}
-	right := hintStyle.Render(page + " ")
+	right := hintStyle.Render(stats + "  " + page + " ")
 	pad := width - lipgloss.Width(left) - lipgloss.Width(right)
 	if pad < 0 {
 		pad = 0

@@ -2,7 +2,6 @@ package ui
 
 import (
 	"fmt"
-	"runtime"
 	"strings"
 	"time"
 
@@ -62,6 +61,7 @@ type ClientModel struct {
 	showHelp        bool
 	rawMode         bool
 	confirmResetMap bool
+	pendingConfirm  string // "esc", "quit", or ""
 	viewport        viewport.Model
 	input           textinput.Model
 	history         *strings.Builder
@@ -71,7 +71,7 @@ type ClientModel struct {
 	warnMsg         string
 	width           int
 	height          int
-	memMB           uint64
+	stats           statsInfo
 }
 
 func NewClientModel(client Connection, state engine.GameState, mapView MapView, serverName string) ClientModel {
@@ -158,6 +158,21 @@ func (m ClientModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.showHelp = false
 			return m, nil
 		}
+		if m.pendingConfirm != "" {
+			if msg.String() == "y" || msg.String() == "Y" {
+				action := m.pendingConfirm
+				m.pendingConfirm = ""
+				switch action {
+				case "esc":
+					return m, func() tea.Msg { return ReturnToLauncherMsg{} }
+				case "quit":
+					_ = m.client.Close()
+					return m, tea.Quit
+				}
+			}
+			m.pendingConfirm = ""
+			return m, nil
+		}
 		if m.confirmResetMap {
 			if msg.String() == "y" || msg.String() == "Y" {
 				backup, err := m.mapView.Reset()
@@ -212,7 +227,8 @@ func (m ClientModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			return m, nil
 		case tea.KeyEsc:
-			return m, func() tea.Msg { return ReturnToLauncherMsg{} }
+			m.pendingConfirm = "esc"
+			return m, nil
 		case tea.KeyEnter:
 			cmd := m.input.Value()
 			if cmd != "" && m.input.EchoMode != textinput.EchoPassword {
@@ -224,9 +240,6 @@ func (m ClientModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if strings.HasPrefix(cmd, "/") {
 				m.handleClientCmd(strings.TrimSpace(cmd))
 			} else {
-				if strings.EqualFold(strings.TrimSpace(cmd), "quit") {
-					_ = m.client.Close()
-				}
 				if err := m.engine.Execute(cmd); err != nil {
 					fmt.Fprintf(m.history, "\n[ ERROR: %v ]\n", err)
 					m.refreshViewport()
@@ -266,9 +279,7 @@ func (m ClientModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		cmds = append(cmds, m.waitForNetworkEvent())
 
 	case sysTick:
-		var ms runtime.MemStats
-		runtime.ReadMemStats(&ms)
-		m.memMB = ms.Alloc / 1024 / 1024
+		m.stats = m.stats.update()
 		return m, sysTickCmd()
 
 	case ErrorMsg:
@@ -306,7 +317,7 @@ func (m *ClientModel) handleClientCmd(cmd string) {
 	case "/raw":
 		m.rawMode = !m.rawMode
 	case "/quit":
-		_ = m.client.Close()
+		m.pendingConfirm = "quit"
 	case "/clear":
 		m.history.Reset()
 		m.refreshViewport()
