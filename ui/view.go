@@ -67,6 +67,14 @@ func (m ClientModel) helpView() string {
 		"  ctrl+x     reset map (backs up current map file)",
 		"  esc        return to server list",
 		"  ctrl+c     quit",
+		"",
+		"  client commands",
+		"  " + sep,
+		"  /clear     clear scrollback buffer",
+		"  /help      show / hide this help",
+		"  /map       toggle map panel",
+		"  /quit      disconnect and return to server list",
+		"  /raw       toggle raw debug mode",
 	}
 	h := m.viewportHeight()
 	for len(lines) < h {
@@ -123,5 +131,10 @@ func (m ClientModel) View() string {
 	if m.confirmResetMap {
 		hint = hintStyle.Render("[ reset map? all rooms will be lost — y to confirm, any other key to cancel ]")
 	}
-	return fmt.Sprintf("%s\n%s\n%s\n%s\n%s", topBar, pane, statusBar, m.input.View(), hint)
+	suggestion := completionMatch(m.input.Value())
+	suggestionLine := hintStyle.Render("  tab → " + suggestion)
+	if suggestion == "" {
+		suggestionLine = ""
+	}
+	return fmt.Sprintf("%s\n%s\n%s\n%s\n%s\n%s", topBar, pane, statusBar, m.input.View(), suggestionLine, hint)
 }

@@ -28,6 +28,20 @@ type ErrorMsg struct {
 
 const mapPanelWidth = 35
 
+var clientCmds = []string{"/clear", "/help", "/map", "/quit", "/raw"}
+
+func completionMatch(input string) string {
+	if !strings.HasPrefix(input, "/") || input == "/" {
+		return ""
+	}
+	for _, c := range clientCmds {
+		if strings.HasPrefix(c, input) && c != input {
+			return c
+		}
+	}
+	return ""
+}
+
 type sysTick struct{}
 
 func sysTickCmd() tea.Cmd {
@@ -75,7 +89,7 @@ func NewClientModel(client Connection, state engine.GameState, mapView MapView) 
 }
 
 func (m *ClientModel) viewportHeight() int {
-	h := m.height - 6
+	h := m.height - 7
 	if h < 1 {
 		h = 1
 	}
@@ -168,6 +182,12 @@ func (m ClientModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.confirmResetMap = true
 			}
 			return m, nil
+		case tea.KeyTab:
+			if match := completionMatch(m.input.Value()); match != "" {
+				m.input.SetValue(match)
+				m.input.CursorEnd()
+			}
+			return m, nil
 		case tea.KeyRunes:
 			if msg.String() == "?" && m.input.Value() == "" {
 				m.showHelp = !m.showHelp
@@ -206,12 +226,16 @@ func (m ClientModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			m.historyIdx = -1
 			m.inputDraft = ""
-			if strings.EqualFold(strings.TrimSpace(cmd), "quit") {
-				_ = m.client.Close()
-			}
-			if err := m.engine.Execute(cmd); err != nil {
-				fmt.Fprintf(m.history, "\n[ ERROR: %v ]\n", err)
-				m.refreshViewport()
+			if strings.HasPrefix(cmd, "/") {
+				m.handleClientCmd(strings.TrimSpace(cmd))
+			} else {
+				if strings.EqualFold(strings.TrimSpace(cmd), "quit") {
+					_ = m.client.Close()
+				}
+				if err := m.engine.Execute(cmd); err != nil {
+					fmt.Fprintf(m.history, "\n[ ERROR: %v ]\n", err)
+					m.refreshViewport()
+				}
 			}
 			m.input.SetValue("")
 		}
@@ -261,4 +285,27 @@ func (m ClientModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	m.viewport, vpCmd = m.viewport.Update(msg)
 	cmds = append(cmds, tiCmd, vpCmd)
 	return m, tea.Batch(cmds...)
+}
+
+func (m *ClientModel) handleClientCmd(cmd string) {
+	parts := strings.Fields(cmd)
+	if len(parts) == 0 {
+		return
+	}
+	switch parts[0] {
+	case "/help":
+		m.showHelp = !m.showHelp
+	case "/map":
+		m.showMap = !m.showMap
+	case "/raw":
+		m.rawMode = !m.rawMode
+	case "/quit":
+		_ = m.client.Close()
+	case "/clear":
+		m.history.Reset()
+		m.refreshViewport()
+	default:
+		fmt.Fprintf(m.history, "\n[ unknown command: %s ]\n", parts[0])
+		m.refreshViewport()
+	}
 }
