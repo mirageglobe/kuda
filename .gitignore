@@ -6,6 +6,7 @@ kuda
 .vscode/
 .idea/
 .claude/
+.antigravitycli/
 .DS_Store
 
 # Logs/Temporary
