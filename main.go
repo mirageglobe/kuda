@@ -99,7 +99,7 @@ func main() {
 	model := rootModel{
 		current: ui.NewSplashModel(),
 	}
-	p := tea.NewProgram(model, tea.WithAltScreen())
+	p := tea.NewProgram(model, tea.WithAltScreen(), tea.WithMouseCellMotion())
 	if _, err := p.Run(); err != nil {
 		fmt.Printf("error running program: %v\n", err)
 		os.Exit(1)
