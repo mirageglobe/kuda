@@ -246,7 +246,7 @@ make release
 | :------------------------- | :----------------------------------------------- | :---------- |
 | M1 — minimal viable client | TCP connection, raw stream display, basic input  | complete    |
 | M2 — protocol foundation   | Telnet negotiation (GA/ECHO), MCCP compression   | complete    |
-| M3 — aardwolf protocols    | GMCP parsing + state management, MSP support     | complete    |
+| M3 — aardwolf protocols    | GMCP parsing + state management                  | complete    |
 | M4 — extensibility         | Lua scripting, basic mapper                      | complete    |
 
 ---
@@ -297,25 +297,8 @@ make release
 - [ ] `[ui]` add Aardwolf in-game time and date ticker to top bar [medium]
 - [ ] `[ui]` add theming support and theme switcher [medium]
 - [ ] `[engine/ui]` add toggle for showing and editing lua based aliases [medium]
-- [x] establish project structure for engine, network, ui, and mapper packages. [medium]
 - [ ] `[network/engine/ui]` implement virtual scrollback buffer for performance. toggle for search and scrollback [hard]
 - [ ] `[engine]` add toggle for filtering Aardwolf-specific text tags (e.g., {say}, {affoff}) [easy]
-- [x] `[network]` implement auto-reconnect with configurable backoff [easy]
-- [x] `[ui]` add settings/connection status display (MCCP, telnet details) [easy]
-- [x] `[ui]` add system info (date, time, CPU/memory) to top bar [easy]
-- [x] `[ui]` add top bar with version, project name, and GitHub link [easy]
-- [x] `[ui]` improve UI with icons and visual symbols [easy]
-- [x] `[ui]` allow quitting mud session to return to the main screen [easy]
-- [x] `[network]` allow aardwolf to quit game cleanly [easy]
-- [x] `[ui]` toggle raw mode — print all received bytes unprocessed for debugging [easy]
-- [x] `[mapper]` persist room graph to disk with periodic auto-save and load on startup [easy]
-- [x] `[ui]` have a help menu hotkey "?" [easy]
-- [x] `[ui]` navigation up and down should go back in history of commands [easy]
-- [x] `[build]` setup GoReleaser for automated versioning and Homebrew deployment [medium]
-- [x] `[ui]` toggle map mode (new screen or overlay) [medium]
-- [x] `[ui]` improve display with border panes [medium]
 
 ### ideas
-- split-pane layout (main output + status/map panel).
-- visual mapper with room graph rendering.
 - plugin system for protocol extensions.

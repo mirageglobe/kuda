@@ -48,7 +48,7 @@ func TestEngine_toggleLua(t *testing.T) {
 
 func TestEngine_executePassthrough(t *testing.T) {
 	e, src := newEngineWithMock()
-	e.luaEnabled = false
+	e.luaEnabled.Store(false)
 	defer close(src.ch)
 
 	if err := e.Execute("look"); err != nil {

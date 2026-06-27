@@ -1,13 +1,18 @@
 package engine
 
-import "strings"
+import (
+	"strings"
+	"sync/atomic"
+)
 
 // Engine is the central brain that consumes network events and updates state.
 type Engine struct {
-	state      *state
-	source     EventSource
-	scripts    *ScriptEngine
-	luaEnabled bool
+	state   *state
+	source  EventSource
+	scripts *ScriptEngine
+	// luaEnabled is toggled from the ui goroutine and read by listen()/Execute;
+	// atomic to keep those cross-goroutine accesses race-free.
+	luaEnabled atomic.Bool
 	roomCh     chan RoomInfo
 }
 
@@ -15,11 +20,11 @@ var _ GameState = (*Engine)(nil)
 
 func NewEngine(source EventSource) *Engine {
 	e := &Engine{
-		state:      &state{},
-		source:     source,
-		luaEnabled: true,
-		roomCh:     make(chan RoomInfo, 32),
+		state:  &state{},
+		source: source,
+		roomCh: make(chan RoomInfo, 32),
 	}
+	e.luaEnabled.Store(true)
 	e.scripts = newScriptEngine(e)
 	go e.listen()
 	return e
@@ -34,15 +39,16 @@ func (e *Engine) CharName() string   { return e.state.CharName() }
 
 // ToggleLua enables or disables the script engine.
 func (e *Engine) ToggleLua() bool {
-	e.luaEnabled = !e.luaEnabled
-	return e.luaEnabled
+	enabled := !e.luaEnabled.Load()
+	e.luaEnabled.Store(enabled)
+	return enabled
 }
 
-func (e *Engine) LuaActive() bool { return e.luaEnabled }
+func (e *Engine) LuaActive() bool { return e.luaEnabled.Load() }
 
 // Execute runs a command through the alias engine and sends it to the server.
 func (e *Engine) Execute(cmd string) error {
-	if e.luaEnabled {
+	if e.luaEnabled.Load() {
 		newCmd, swallowed := e.scripts.evalAlias(cmd)
 		if swallowed {
 			return nil
@@ -65,7 +71,7 @@ func (e *Engine) listen() {
 			case EventGMCP:
 				e.handleGMCP(ev.Data)
 			case EventText:
-				if e.luaEnabled {
+				if e.luaEnabled.Load() {
 					lines := strings.Split(string(ev.Data), "\n")
 					for _, l := range lines {
 						if l != "" {
