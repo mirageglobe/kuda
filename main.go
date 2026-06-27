@@ -13,7 +13,7 @@ import (
 
 var (
 	version   = "dev"
-	buildTime = "unknown" //nolint:unused
+	buildTime = "unknown"
 )
 
 // rootModel owns model transitions and network client creation.
@@ -95,6 +95,15 @@ func (m rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m rootModel) View() string { return m.current.View() }
 
 func main() {
+	// handle --version before starting the tui so the binary is scriptable
+	// (and the homebrew formula's `kuda --version` test passes).
+	for _, arg := range os.Args[1:] {
+		if arg == "--version" || arg == "-v" {
+			fmt.Printf("kuda %s (built %s)\n", version, buildTime)
+			return
+		}
+	}
+
 	ui.AppVersion = version
 	model := rootModel{
 		current: ui.NewSplashModel(),

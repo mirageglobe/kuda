@@ -17,4 +17,4 @@ make build
 ## Status
 Kuda is currently in the initial development phase.
 
-See [SPEC.md](SPEC.md#6-development-roadmap) for the project roadmap.
+See [SPEC.md](SPEC.md#7-roadmap) for the project roadmap.
